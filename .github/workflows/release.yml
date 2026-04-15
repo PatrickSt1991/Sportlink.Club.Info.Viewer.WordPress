@@ -69,8 +69,9 @@ jobs:
           echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
 
       # ── Create GitHub Release with zip attached ────────────────────────────
+      # Runs on tag push OR manual dispatch when a real version tag is supplied.
       - name: Create GitHub Release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tag != 'dev' && inputs.tag != '')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
