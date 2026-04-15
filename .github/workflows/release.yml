@@ -1,0 +1,94 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Version tag to use for the release zip (e.g. v1.0.0)'
+        required: false
+        default: 'dev'
+
+jobs:
+  build:
+    name: Build & Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Build Vue bundle ───────────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: vue-app/package-lock.json
+
+      - name: Install Vue dependencies
+        working-directory: vue-app
+        run: npm ci
+
+      - name: Build Vue bundle
+        working-directory: vue-app
+        run: npm run build
+
+      # ── Determine version ──────────────────────────────────────────────────
+      - name: Set version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Package plugin zip ─────────────────────────────────────────────────
+      - name: Create plugin zip
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          PLUGIN_SLUG="sportlink-club-viewer"
+          ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
+
+          # Assemble only the files WordPress needs — no Vue source, no dev files
+          mkdir -p /tmp/plugin/${PLUGIN_SLUG}
+
+          cp sportlink-club-viewer.php /tmp/plugin/${PLUGIN_SLUG}/
+          cp README.md                  /tmp/plugin/${PLUGIN_SLUG}/
+
+          cp -r includes  /tmp/plugin/${PLUGIN_SLUG}/
+          cp -r admin     /tmp/plugin/${PLUGIN_SLUG}/
+          cp -r assets    /tmp/plugin/${PLUGIN_SLUG}/
+
+          cd /tmp/plugin
+          zip -r "${GITHUB_WORKSPACE}/${ZIP_NAME}" ${PLUGIN_SLUG}/
+
+          echo "ZIP_NAME=${ZIP_NAME}" >> "$GITHUB_ENV"
+
+      # ── Create GitHub Release with zip attached ────────────────────────────
+      - name: Create GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Sportlink Club Viewer ${{ steps.version.outputs.tag }}
+          body: |
+            ## Sportlink Club Viewer ${{ steps.version.outputs.tag }}
+
+            ### Installation
+            1. Download `${{ env.ZIP_NAME }}` below.
+            2. In WordPress Admin go to **Plugins → Add New → Upload Plugin**.
+            3. Upload the zip and activate.
+            4. Configure under **Instellingen → Sportlink Viewer**.
+          files: ${{ env.ZIP_NAME }}
+
+      # ── Upload zip as artifact (for workflow_dispatch / dev builds) ────────
+      - name: Upload zip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
+          retention-days: 30
