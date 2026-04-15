@@ -1,0 +1,264 @@
+/* ─── Design tokens ───────────────────────────────────────── */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, Helvetica, Arial, sans-serif;
+  --c-primary:      #2563eb;
+  --c-primary-dark: #1d4ed8;
+  --c-primary-glow: rgba(37, 99, 235, 0.30);
+  --surface:        rgba(255, 255, 255, 0.93);
+  --surface-dim:    rgba(255, 255, 255, 0.80);
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur:  0.22s;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
+  background-size: cover;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Reset (scoped to plugin wrapper) ───────────────────── */
+.scv-display-wrapper,
+.scv-display-wrapper * {
+  box-sizing: border-box;
+}
+
+.scv-display-wrapper {
+  width: 100%;
+  min-height: 100vh;
+  max-width: 1600px;
+  margin: 0 auto;
+  text-align: center;
+  overflow-x: hidden;
+}
+
+/* ─── Top bar ─────────────────────────────────────────────── */
+#topbar {
+  margin: 0;
+  padding: 15px 32px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 26px;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 3px 16px rgba(0, 0, 0, 0.22);
+}
+
+/* ─── Match container ─────────────────────────────────────── */
+#rcorners_matchinfo_fixed {
+  width: 100%;
+  font-size: 18px;
+  font-weight: 600;
+  position: relative;
+}
+
+.match-header {
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  margin-bottom: 0;
+  position: relative;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.match-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.14);
+  pointer-events: none;
+}
+
+/* ─── Match entry rows ────────────────────────────────────── */
+.matchEntry {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 3px solid rgba(0, 0, 0, 0.35);
+  box-shadow: 0 3px 18px rgba(0, 0, 0, 0.55);
+}
+
+#datumUitslag_fixed,
+#datumProgramma_fixed,
+#thuisteam_fixed,
+#kleedkamer_fixed,
+#uitteam_fixed,
+#wedstrijdveld_fixed {
+  font-size: inherit;
+  font-weight: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.50);
+  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.20);
+}
+
+#datumUitslag_fixed {
+  width: 10%;
+  padding: 18px 10px;
+  letter-spacing: 0.03em;
+}
+
+#datumProgramma_fixed {
+  width: 10%;
+  padding: 10px 10px;
+  letter-spacing: 0.03em;
+}
+
+#thuisteam_fixed  { width: 45%; padding: 18px 16px; }
+#uitteam_fixed    { width: 45%; padding: 18px 16px; }
+#kleedkamer_fixed { width: 20%; padding: 18px 10px; }
+
+#wedstrijdveld_fixed {
+  width: 15%;
+  padding: 18px 10px;
+  letter-spacing: 0.04em;
+  box-shadow: none;
+}
+
+/* ─── Club logo ───────────────────────────────────────────── */
+.clublogo-wrap {
+  flex: 0 0 64px;
+  width: 64px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clublogo {
+  width: 56px;
+  height: 56px;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* ─── Scrolling container ─────────────────────────────────── */
+#scrollingContainer {
+  overflow-y: hidden;
+  position: relative;
+}
+
+/* ─── Fade transition ─────────────────────────────────────── */
+.fade-enter-active,
+.fade-leave-active { transition: opacity 0.4s var(--ease); }
+.fade-enter-from,
+.fade-leave-to     { opacity: 0; }
+
+/* ─── Loading / error state ───────────────────────────────── */
+#noMatchMessage {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1e293b;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+}
+
+#noMatchMessage h1 {
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0;
+  color: #0f172a;
+}
+
+/* ─── Empty state ─────────────────────────────────────────── */
+.no-matches-container {
+  text-align: center;
+  padding: 2.5rem 1rem 2rem;
+  color: #334155;
+}
+
+.calendar-icon {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  margin: 0 auto 1.5rem;
+  animation: gentleFloat 3s ease-in-out infinite;
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+.calendar-page {
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  padding: 14px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.empty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  height: 100%;
+}
+
+.grid-cell         { background: rgba(0, 0, 0, 0.08); }
+
+.calendar-spine {
+  position: absolute;
+  left: -8px;
+  top: 6px;
+  bottom: 6px;
+  width: 8px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.calh2 { margin: 0 0 0.5rem; font-size: 1.1em; font-weight: 700; color: #0f172a; }
+.calp  { margin: 0; font-size: 0.88em; color: #64748b; line-height: 1.65; }
+
+/* ─── Sponsor bar ─────────────────────────────────────────── */
+.sponsor-bar-container {
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 -3px 16px rgba(0, 0, 0, 0.22);
+}
+
+.sponsor-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sponsor-images {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.sponsor-image {
+  height: 40px;
+  margin: 4px;
+  flex: 1 1 calc(14.2857% - 8px);
+  max-width: calc(14.2857% - 8px);
+  background-color: transparent;
+  object-fit: contain;
+}
+
+.copyright {
+  font-size: 12px;
+  font-weight: 400;
+  color: #94a3b8;
+  text-align: center;
+  padding: 6px 20px 8px;
+  margin: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.copyright a { color: inherit; }

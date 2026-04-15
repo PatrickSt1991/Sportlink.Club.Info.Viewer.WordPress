@@ -1,0 +1,151 @@
+/* ── Wrap ─────────────────────────────────────────────────── */
+.scv-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.scv-logo {
+    font-size: 28px;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────── */
+.scv-tabs {
+    margin-bottom: 0;
+}
+
+.scv-tab-content {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+}
+
+/* ── Section headings ─────────────────────────────────────── */
+.scv-section {
+    margin-bottom: 28px;
+}
+
+.scv-section h2 {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1d2327;
+    border-bottom: 1px solid #e2e4e7;
+    padding-bottom: 8px;
+    margin-bottom: 0;
+}
+
+/* ── Field visibility ─────────────────────────────────────── */
+.scv-field-hide {
+    display: none !important;
+}
+
+/* ── Status messages ─────────────────────────────────────── */
+.scv-success {
+    color: #46b450;
+    font-weight: 600;
+}
+
+.scv-error {
+    color: #dc3232;
+    font-weight: 600;
+}
+
+/* ── Color preview bar ────────────────────────────────────── */
+.scv-color-preview {
+    display: flex;
+    height: 56px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 12px 0 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    max-width: 700px;
+}
+
+.scv-preview-col {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 4px;
+    transition: background .2s, color .2s;
+}
+
+/* ── Color picker row ─────────────────────────────────────── */
+.scv-color-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scv-color-label {
+    font-size: 12px;
+    color: #646970;
+    min-width: 80px;
+}
+
+/* Restrict the wp-color-picker swatch width */
+.scv-color-row .wp-picker-container {
+    display: inline-flex;
+    align-items: center;
+}
+
+/* ── Sponsors grid ────────────────────────────────────────── */
+.scv-sponsors-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.scv-sponsor-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-radius: 4px;
+    padding: 8px;
+    width: 200px;
+}
+
+.scv-sponsor-item img {
+    max-width: 180px;
+    max-height: 50px;
+    object-fit: contain;
+    background: #fff;
+}
+
+/* ── Shortcode info box ───────────────────────────────────── */
+.scv-shortcode-info {
+    background: #f6f7f7;
+    border: 1px solid #dcdcde;
+    border-left: 4px solid #2271b1;
+    padding: 12px 16px;
+    margin-top: 4px;
+}
+
+.scv-shortcode-info h3 {
+    margin: 0 0 8px;
+    font-size: 14px;
+}
+
+.scv-shortcode-info ul {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.scv-shortcode-info code {
+    background: #fff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+}

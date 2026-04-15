@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sportlink Club Viewer</title>
+  </head>
+  <body>
+    <!-- Dev-mode only: inject a minimal scvConfig for local testing -->
+    <script>
+      window.scvConfig = {
+        appType: 'match-display',
+        gameTypeLabel: 'Voetbal',
+        connectionType: 'Sportlink API',
+        clientId: '',
+        clubId: null,
+        clubIdentifer: null,
+        sportLocatie: null,
+        username: '',
+        password: '',
+        fakeCredentials: false,
+        programmaDagen: 7,
+        uitslagDagen: 7,
+        prematchRefresh: 15,
+        enableScreenSwitch: true,
+        activeSponsors: false,
+        selectedBackground: '',
+        sponsorImages: [],
+        leftBoxColor: '#b40808', leftBoxText: '#ffffff',
+        leftMidBoxColor: '#000000', leftMidBoxText: '#ffffff',
+        midBoxColor: '#de0b0b', midBoxText: '#ffffff',
+        rightMidBoxColor: '#000000', rightMidBoxText: '#ffffff',
+        rightBoxColor: '#b40808', rightBoxText: '#ffffff',
+      };
+    </script>
+    <div id="scv-match-display" class="scv-display-wrapper"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
