@@ -579,13 +579,7 @@ class SCV_Ajax {
                     wp_send_json_error( [ 'message' => __( 'Geen client ID ingevuld.', 'sportlink-club-viewer' ) ] );
                 }
                 $resp = wp_remote_get( "https://data.sportlink.com/clubgegevens?client_id={$client_id}", [ 'timeout' => 10 ] );
-                if ( is_wp_error( $resp ) ) {
-                    $status['status'] = 'error'; $status['message'] = $resp->get_error_message();
-                    update_option( 'scv_connection_status', $status );
-                    wp_send_json_error( [ 'message' => $status['message'] ] );
-                }
-                $body = json_decode( wp_remote_retrieve_body( $resp ), true );
-                if ( empty( $body[0]['naam'] ) ) {
+                if ( is_wp_error( $resp ) || wp_remote_retrieve_response_code( $resp ) !== 200 ) {
                     $msg = __( 'Client ID niet gevonden of ongeldig.', 'sportlink-club-viewer' );
                     $status['status'] = 'error'; $status['message'] = $msg;
                     update_option( 'scv_connection_status', $status );
