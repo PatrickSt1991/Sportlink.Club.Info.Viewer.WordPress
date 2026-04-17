@@ -1,73 +1,73 @@
 # Sportlink Club Viewer — WordPress Plugin
 
-A WordPress plugin that brings the [ClubInfoBoard](https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer) match display to any WordPress site. Embed live match schedules, results, and pre-match room/field information on any page or post using shortcodes.
+Een WordPress-plugin die het [ClubInfoBoard](https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer) wedstrijdscherm naar elke WordPress-site brengt. Toon live wedstrijdschema's, uitslagen en voorwedstrijdinformatie over kleedkamers en velden op elke pagina of elk bericht via shortcodes.
 
-## Features
+## Functies
 
-- Live match schedule and results via Sportlink API, Sportlink Proxy, or Nevobo (volleyball)
-- Pre-match information: dressing room assignments and field layout
-- Automatic screen switching between schedule and results
-- Customisable colour scheme (5 columns, background + text each)
-- Sponsor image bar (up to 13 images, from media library or URL)
-- Custom background image via the WordPress media library
-- Full configuration through a native WordPress admin settings page
-- No external dependencies beyond the plugin itself
+- Live wedstrijdschema en uitslagen via de Sportlink API, Sportlink Proxy of Nevobo (volleybal)
+- Voorwedstrijdinformatie: kleedkamerverdeling en veldindeling
+- Automatisch wisselen tussen schema en uitslagen
+- Aanpasbaar kleurenschema (5 kolommen, achtergrond + tekst per kolom)
+- Sponsorafbeeldingenbalk (maximaal 13 afbeeldingen, uit de mediabibliotheek of via URL)
+- Aangepaste achtergrondafbeelding via de WordPress-mediabibliotheek
+- Volledige configuratie via een native WordPress-beheerpagina
+- Geen externe afhankelijkheden buiten de plugin zelf
 
-## Requirements
+## Vereisten
 
-- WordPress 5.9 or higher
-- PHP 7.4 or higher
-- An active Sportlink API client ID, Sportlink Proxy credentials, or a Nevobo club identifier
+- WordPress 5.9 of hoger
+- PHP 7.4 of hoger
+- Een actieve Sportlink API client-ID, Sportlink Proxy-inloggegevens of een Nevobo-clubidentificatie
 
-## Installation
+## Installatie
 
-1. Download the latest release zip from the [Releases](https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress/releases) page.
-2. In WordPress Admin go to **Plugins → Add New → Upload Plugin**.
-3. Upload the zip and click **Activate Plugin**.
-4. Navigate to **Instellingen → Sportlink Viewer** and complete the setup.
+1. Download de nieuwste release-zip vanaf de [Releases](https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress/releases)-pagina.
+2. Ga in het WordPress-beheer naar **Plugins → Nieuwe plugin → Plugin uploaden**.
+3. Upload de zip en klik op **Plugin activeren**.
+4. Navigeer naar **Instellingen → Sportlink Viewer** en doorloop de installatie.
 
-## Configuration
+## Configuratie
 
-The settings page has three tabs:
+De instellingenpagina heeft drie tabbladen:
 
-### Instellingen (General)
+### Instellingen (Algemeen)
 
-| Setting | Description |
+| Instelling | Omschrijving |
 |---|---|
-| Sport | Choose your sport (Voetbal, Basketbal, Korfbal, Volleybal, Waterpolo, Hockey België, Handbal, Soft- en Honkbal) |
-| Verbindingstype | Sportlink API, Sportlink Proxy, or Nevobo Proxy |
-| Client ID | Your Sportlink API client ID (Sportlink API only) |
-| Gebruikersnaam / Wachtwoord | Sportlink app credentials (Sportlink Proxy only) |
-| Club identifier | Your Nevobo club code, e.g. `NELO123` (Nevobo Proxy only) |
-| Club ophalen | Fetch available clubs and pick yours from the dropdown |
-| Programma dagen | How many days ahead to show scheduled matches (default 7) |
-| Uitslag dagen | How many days back to show results (default 7) |
-| Voorwedstrijd verversing | Auto-refresh interval in seconds for the pre-match display (default 15) |
-| Scherm automatisch wisselen | Toggle automatic switching between schedule and results after 2 scroll cycles |
-| Sponsors weergeven | Show the sponsor image bar |
-| Achtergrondafbeelding | Background image URL (pick from media library or enter directly) |
-| Debug modus | Log raw API responses to the browser console (F12) |
+| Sport | Kies je sport (Voetbal, Basketbal, Korfbal, Volleybal, Waterpolo, Hockey België, Handbal, Soft- en Honkbal) |
+| Verbindingstype | Sportlink API, Sportlink Proxy of Nevobo Proxy |
+| Client ID | Je Sportlink API client-ID (alleen bij Sportlink API) |
+| Gebruikersnaam / Wachtwoord | Sportlink-app-inloggegevens (alleen bij Sportlink Proxy) |
+| Club identifier | Je Nevobo-clubcode, bijv. `NELO123` (alleen bij Nevobo Proxy) |
+| Club ophalen | Beschikbare clubs ophalen en je club kiezen uit de vervolgkeuzelijst |
+| Programma dagen | Hoeveel dagen vooruit geplande wedstrijden worden getoond (standaard 7) |
+| Uitslag dagen | Hoeveel dagen terug uitslagen worden getoond (standaard 7) |
+| Voorwedstrijd verversing | Automatisch verversingsinterval in seconden voor het voorwedstrijdscherm (standaard 15) |
+| Scherm automatisch wisselen | Automatisch wisselen tussen schema en uitslagen na 2 scrollcycli in- of uitschakelen |
+| Sponsors weergeven | De sponsorafbeeldingenbalk tonen |
+| Achtergrondafbeelding | URL van de achtergrondafbeelding (kies uit de mediabibliotheek of voer direct in) |
+| Debug modus | Ruwe API-antwoorden naar de browserconsole loggen (F12) |
 
-### Stijl (Style)
+### Stijl
 
-Pick background and text colours for each of the five display columns using the WordPress colour picker. A live preview updates as you choose.
+Kies achtergrond- en tekstkleuren voor elk van de vijf weergavekolommen via de WordPress-kleurkiezer. Een livevoorbeeld wordt bijgewerkt terwijl je kiest.
 
 ### Sponsors
 
-Add sponsor images from the WordPress media library or by direct URL. Maximum 13 sponsors.
+Voeg sponsorafbeeldingen toe vanuit de WordPress-mediabibliotheek of via een directe URL. Maximaal 13 sponsors.
 
 ## Shortcodes
 
-| Shortcode | Description |
+| Shortcode | Omschrijving |
 |---|---|
-| `[sportlink_match_display]` | Match schedule for the next *n* days, auto-switches to results after 2 scroll cycles (if enabled) |
-| `[sportlink_prematch_display]` | Pre-match information (dressing rooms + field) for matches starting within the next 3 hours |
+| `[sportlink_match_display]` | Wedstrijdschema voor de komende *n* dagen; schakelt automatisch over naar uitslagen na 2 scrollcycli (indien ingeschakeld) |
+| `[sportlink_prematch_display]` | Voorwedstrijdinformatie (kleedkamers + veld) voor wedstrijden die binnen de komende 3 uur beginnen |
 
-**Tip:** use a full-width or blank page template (no header/footer) for a clean display-screen look.
+**Tip:** gebruik een paginasjabloon op volledige breedte of zonder kop- en voettekst voor een strak weergaveschermformaat.
 
-## Building from Source
+## Bouwen vanuit broncode
 
-The Vue 3 frontend lives in `vue-app/`. After making changes, rebuild the bundle:
+De Vue 3-frontend bevindt zich in `vue-app/`. Bouw de bundel opnieuw na het maken van wijzigingen:
 
 ```bash
 cd vue-app
@@ -75,8 +75,8 @@ npm install
 npm run build
 ```
 
-The compiled assets are written to `assets/dist/` and committed alongside the PHP source so a Node.js environment is not required for a standard installation.
+De gecompileerde bestanden worden weggeschreven naar `assets/dist/` en samen met de PHP-bronbestanden opgeslagen, zodat een Node.js-omgeving niet vereist is voor een standaardinstallatie.
 
-## License
+## Licentie
 
-MIT — free to use, modify, and distribute.
+MIT — vrij te gebruiken, aan te passen en te verspreiden.
