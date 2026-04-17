@@ -143,6 +143,20 @@
   position: relative;
 }
 
+/* ─── Standings ───────────────────────────────────────────── */
+.scv-own-team > div {
+  filter: brightness(1.25);
+  font-weight: 700;
+}
+
+.scv-standing-divider > div {
+  flex: 1;
+  padding: 10px 16px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
 /* ─── Fade transition ─────────────────────────────────────── */
 .fade-enter-active,
 .fade-leave-active { transition: opacity 0.4s var(--ease); }

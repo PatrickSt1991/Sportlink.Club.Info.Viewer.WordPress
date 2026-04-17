@@ -13,6 +13,15 @@
         'Nevobo Proxy':    'Verbinding via proxy met de Nevobo-API (volleybal). Vul je Nevobo club-identifier in.',
     };
 
+    function updateStandingsVisibility() {
+        const isProxy = $( '#scv_connection_type' ).val() === 'Sportlink Proxy';
+        const hasClub = !! $( '#scv_club_id' ).val();
+        const hasTeam = !! $( '#scv_standing_team_id' ).val();
+        $( '#scv-standings-team-row' ).toggle( isProxy && hasClub );
+        $( '#scv-standings-comp-row' ).toggle( isProxy && hasTeam );
+        $( '#scv-standings-no-proxy' ).toggle( ! isProxy );
+    }
+
     function updateFieldVisibility() {
         const connType  = $( '#scv_connection_type' ).val();
         const gameLabel = $( '#scv_game_type_label' ).val();
@@ -48,7 +57,10 @@
     }
 
     $( '#scv_connection_type, #scv_game_type_label' ).on( 'change', updateFieldVisibility );
+    $( '#scv_connection_type' ).on( 'change', updateStandingsVisibility );
+    $( '#scv_club_id' ).on( 'change', updateStandingsVisibility );
     updateFieldVisibility();
+    updateStandingsVisibility();
 
     // ── Fetch clubs (Sportlink Proxy / Nevobo) ────────────────────────────────
 
@@ -181,6 +193,126 @@
             const selected = clubs.find( c => c.id === $( this ).val() );
             if ( selected ) {
                 $( '#scv_sport_locatie' ).val( selected.city || selected.name );
+            }
+        } );
+    }
+
+    // ── Fetch teams for standings ─────────────────────────────────────────────
+
+    $( '#scv-fetch-teams' ).on( 'click', function () {
+        const $btn     = $( this );
+        const $spinner = $( '#scv-fetch-teams-spinner' );
+        const $status  = $( '#scv-fetch-teams-status' );
+
+        $btn.prop( 'disabled', true );
+        $spinner.show();
+        $status.text( 'Teams ophalen…' ).removeClass( 'scv-error scv-success' );
+
+        $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data:   {
+                action:          'scv_fetch_teams',
+                nonce:           scvAdmin.nonce,
+                club_id:         $( '#scv_club_id' ).val(),
+                game_type_label: $( '#scv_game_type_label' ).val(),
+                username:        $( '#scv_username' ).val(),
+            },
+        } )
+        .done( function ( response ) {
+            if ( response.success && response.data.teams && response.data.teams.length ) {
+                populateTeamSelect( response.data.teams );
+                $status.text( response.data.teams.length + ' teams gevonden.' ).addClass( 'scv-success' );
+            } else {
+                $status.text( response.data?.message || 'Geen teams gevonden.' ).addClass( 'scv-error' );
+            }
+        } )
+        .fail( function () {
+            $status.text( 'Verbindingsfout. Probeer opnieuw.' ).addClass( 'scv-error' );
+        } )
+        .always( function () {
+            $btn.prop( 'disabled', false );
+            $spinner.hide();
+        } );
+    } );
+
+    function populateTeamSelect( teams ) {
+        const $wrap   = $( '#scv-team-select-wrap' );
+        const $select = $( '#scv_standing_team_id' );
+        const current = $select.val();
+
+        $select.empty().append( '<option value="">' + '— Kies een team —' + '</option>' );
+        teams.forEach( function ( team ) {
+            $select.append( $( '<option>', { value: team.id, text: team.name } ) );
+        } );
+
+        if ( current ) $select.val( current );
+        $wrap.show();
+
+        $select.on( 'change', function () {
+            const selected = teams.find( t => t.id === $( this ).val() );
+            if ( selected ) {
+                $( '#scv_standing_team_name' ).val( selected.name );
+            }
+        } );
+    }
+
+    // ── Fetch competitions for standings team ─────────────────────────────────
+
+    $( '#scv-fetch-competitions' ).on( 'click', function () {
+        const $btn     = $( this );
+        const $spinner = $( '#scv-fetch-comp-spinner' );
+        const $status  = $( '#scv-fetch-comp-status' );
+
+        $btn.prop( 'disabled', true );
+        $spinner.show();
+        $status.text( 'Competities ophalen…' ).removeClass( 'scv-error scv-success' );
+
+        $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data:   {
+                action:          'scv_fetch_competitions',
+                nonce:           scvAdmin.nonce,
+                team_id:         $( '#scv_standing_team_id' ).val(),
+                game_type_label: $( '#scv_game_type_label' ).val(),
+                username:        $( '#scv_username' ).val(),
+            },
+        } )
+        .done( function ( response ) {
+            if ( response.success && response.data.competitions && response.data.competitions.length ) {
+                populateCompetitionSelect( response.data.competitions );
+                $status.text( response.data.competitions.length + ' competities gevonden.' ).addClass( 'scv-success' );
+            } else {
+                $status.text( response.data?.message || 'Geen competities gevonden.' ).addClass( 'scv-error' );
+            }
+        } )
+        .fail( function () {
+            $status.text( 'Verbindingsfout. Probeer opnieuw.' ).addClass( 'scv-error' );
+        } )
+        .always( function () {
+            $btn.prop( 'disabled', false );
+            $spinner.hide();
+        } );
+    } );
+
+    function populateCompetitionSelect( competitions ) {
+        const $wrap   = $( '#scv-comp-select-wrap' );
+        const $select = $( '#scv_standing_pool_id' );
+        const current = $select.val();
+
+        $select.empty().append( '<option value="">' + '— Kies een competitie —' + '</option>' );
+        competitions.forEach( function ( comp ) {
+            $select.append( $( '<option>', { value: comp.id, text: comp.name } ) );
+        } );
+
+        if ( current ) $select.val( current );
+        $wrap.show();
+
+        $select.on( 'change', function () {
+            const selected = competitions.find( c => c.id === $( this ).val() );
+            if ( selected ) {
+                $( '#scv_standing_pool_name' ).val( selected.name );
             }
         } );
     }

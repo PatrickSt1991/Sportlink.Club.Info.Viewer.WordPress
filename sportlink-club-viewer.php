@@ -37,6 +37,8 @@ register_activation_hook( __FILE__, function () {
         'scv_programma_dagen'      => 7,
         'scv_uitslag_dagen'        => 7,
         'scv_prematch_refresh'     => 15,
+        'scv_display_height'       => 0,
+        'scv_scroll_speed'         => 2,
         'scv_enable_screen_switch' => 1,
         'scv_active_sponsors'      => 0,
         'scv_colors'               => [
@@ -51,7 +53,16 @@ register_activation_hook( __FILE__, function () {
             'rightBoxColor'    => '#b40808',
             'rightBoxText'     => '#ffffff',
         ],
-        'scv_sponsors' => [],
+        'scv_sponsors'            => [],
+        'scv_enable_standings'    => 0,
+        'scv_standing_columns'    => [
+            'totalMatches' => 1, 'won' => 1, 'draw' => 1, 'lost' => 1,
+            'goalsFor' => 1, 'goalsAgainst' => 1, 'goalsDiff' => 1, 'points' => 1,
+        ],
+        'scv_standing_team_id'    => '',
+        'scv_standing_team_name'  => '',
+        'scv_standing_pool_id'    => '',
+        'scv_standing_pool_name'  => '',
         'scv_layout'   => [
             'leftWidth'       => 2,  'leftMidWidth'    => 9, 'midWidth'        => 4,
             'rightMidWidth'   => 9,  'rightWidth'      => 3,

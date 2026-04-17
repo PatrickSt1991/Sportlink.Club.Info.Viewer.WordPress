@@ -65,6 +65,23 @@ function buildConfigFromWP(wpConfig) {
     enableScreenSwitch: wpConfig.enableScreenSwitch  !== false,
     activeSponsors:     !!wpConfig.activeSponsors,
     selectedBackground: wpConfig.selectedBackground  || '',
+    displayHeight:      wpConfig.displayHeight       || 0,
+    scrollSpeed:        wpConfig.scrollSpeed         || 2,
+
+    // Standings
+    enableStandings: !!wpConfig.enableStandings,
+    standingTeamId:  wpConfig.standingTeamId  || null,
+    standingPoolId:  wpConfig.standingPoolId  || null,
+    standingColumns: {
+      totalMatches: wpConfig.standingColumns?.totalMatches !== false,
+      won:          wpConfig.standingColumns?.won          !== false,
+      draw:         wpConfig.standingColumns?.draw         !== false,
+      lost:         wpConfig.standingColumns?.lost         !== false,
+      goalsFor:     wpConfig.standingColumns?.goalsFor     !== false,
+      goalsAgainst: wpConfig.standingColumns?.goalsAgainst !== false,
+      goalsDiff:    wpConfig.standingColumns?.goalsDiff    !== false,
+      points:       wpConfig.standingColumns?.points       !== false,
+    },
 
     // Layout
     columnWidths: {
@@ -103,6 +120,9 @@ const defaultConfig = {
   validUsername: false, validPassword: false, validClientId: false,
   sportLocatie: null, programmaDagen: 7, uitslagDagen: 7,
   prematchRefresh: 15, enableScreenSwitch: true, activeSponsors: false, selectedBackground: '',
+  displayHeight: 0, scrollSpeed: 2,
+  enableStandings: false, standingTeamId: null, standingPoolId: null,
+  standingColumns: { totalMatches: true, won: true, draw: true, lost: true, goalsFor: true, goalsAgainst: true, goalsDiff: true, points: true },
   columnWidths: { left: 2, leftMid: 9, mid: 4, rightMid: 9, right: 3 },
   columnVisible: { left: true, leftMid: true, mid: true, rightMid: true, right: true },
   showLogos: true,

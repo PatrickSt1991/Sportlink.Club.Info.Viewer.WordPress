@@ -20,6 +20,7 @@ const toastOptions = {
 const mountTargets = [
   { id: 'scv-match-display',    appType: 'match-display'    },
   { id: 'scv-prematch-display', appType: 'prematch-display' },
+  { id: 'scv-standing-display', appType: 'standing-display' },
 ];
 
 function initialize() {

@@ -4,8 +4,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class SCV_Shortcodes {
 
     public static function init() {
-        add_shortcode( 'sportlink_match_display',   [ __CLASS__, 'render_match_display' ] );
+        add_shortcode( 'sportlink_match_display',    [ __CLASS__, 'render_match_display' ] );
         add_shortcode( 'sportlink_prematch_display', [ __CLASS__, 'render_prematch_display' ] );
+        add_shortcode( 'sportlink_standing_display', [ __CLASS__, 'render_standing_display' ] );
     }
 
     /**
@@ -22,6 +23,14 @@ class SCV_Shortcodes {
      */
     public static function render_prematch_display( $atts ) {
         return self::render( 'prematch-display' );
+    }
+
+    /**
+     * [sportlink_standing_display]
+     * Shows the league standings for the configured team.
+     */
+    public static function render_standing_display( $atts ) {
+        return self::render( 'standing-display' );
     }
 
     private static function render( string $app_type ): string {

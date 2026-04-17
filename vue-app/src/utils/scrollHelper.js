@@ -1,15 +1,18 @@
 import { ref } from 'vue';
 
 export function useScrollHelper(router, config) {
-    const scrollInterval          = ref(null);
+    const scrollInterval           = ref(null);
     const scrollingContainerHeight = ref('300px');
-    const scrollPosition          = ref(0);
-    const scrollCycleCount        = ref(0);
-    const containerReady          = ref(false);
-    const noContentTimeout        = ref(null);
+    const scrollPosition           = ref(0);
+    const scrollCycleCount         = ref(0);
+    const containerReady           = ref(false);
+    const noContentTimeout         = ref(null);
 
     const calculateScrollingContainerHeight = () => {
-        scrollingContainerHeight.value = `${window.innerHeight - 265}px`;
+        const fixed = config.value?.displayHeight;
+        scrollingContainerHeight.value = (fixed && fixed > 0)
+            ? `${fixed}px`
+            : `${window.innerHeight - 265}px`;
     };
 
     const startScrolling = () => {
@@ -34,7 +37,6 @@ export function useScrollHelper(router, config) {
 
         const scrollHeight = container.scrollHeight - container.clientHeight;
         if (scrollHeight <= 0) {
-            console.log('Not enough content to scroll');
             noContentTimeout.value = setTimeout(() => {
                 if (config.value.enableScreenSwitch) {
                     const currentPath = router.currentRoute.value.path;
@@ -45,8 +47,9 @@ export function useScrollHelper(router, config) {
         }
 
         scrollInterval.value = setInterval(() => {
-            scrollPosition.value += 1;
-            container.scrollTop  = scrollPosition.value;
+            const speed = config.value?.scrollSpeed || 2;
+            scrollPosition.value += speed;
+            container.scrollTop   = scrollPosition.value;
 
             if (scrollPosition.value >= scrollHeight) {
                 scrollPosition.value   = 0;
@@ -55,12 +58,11 @@ export function useScrollHelper(router, config) {
 
                 if (scrollCycleCount.value >= 2 && config.value.enableScreenSwitch) {
                     stopScrolling();
-                    // Toggle between match-info and match-results
                     const currentPath = router.currentRoute.value.path;
                     router.push(currentPath === '/match-info' ? '/match-results' : '/match-info');
                 }
             }
-        }, 100);
+        }, 50);
     };
 
     const tryStartScrolling = (attempt = 0) => {
