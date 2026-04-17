@@ -66,6 +66,23 @@ function buildConfigFromWP(wpConfig) {
     activeSponsors:     !!wpConfig.activeSponsors,
     selectedBackground: wpConfig.selectedBackground  || '',
 
+    // Layout
+    columnWidths: {
+      left:     wpConfig.columnWidths?.left     ?? 2,
+      leftMid:  wpConfig.columnWidths?.leftMid  ?? 9,
+      mid:      wpConfig.columnWidths?.mid      ?? 4,
+      rightMid: wpConfig.columnWidths?.rightMid ?? 9,
+      right:    wpConfig.columnWidths?.right    ?? 3,
+    },
+    columnVisible: {
+      left:     wpConfig.columnVisible?.left     !== false,
+      leftMid:  wpConfig.columnVisible?.leftMid  !== false,
+      mid:      wpConfig.columnVisible?.mid      !== false,
+      rightMid: wpConfig.columnVisible?.rightMid !== false,
+      right:    wpConfig.columnVisible?.right    !== false,
+    },
+    showLogos: wpConfig.showLogos !== false,
+
     // Colors
     leftBoxColor:     wpConfig.leftBoxColor     || '#b40808',
     leftBoxText:      wpConfig.leftBoxText      || '#ffffff',
@@ -86,6 +103,9 @@ const defaultConfig = {
   validUsername: false, validPassword: false, validClientId: false,
   sportLocatie: null, programmaDagen: 7, uitslagDagen: 7,
   prematchRefresh: 15, enableScreenSwitch: true, activeSponsors: false, selectedBackground: '',
+  columnWidths: { left: 2, leftMid: 9, mid: 4, rightMid: 9, right: 3 },
+  columnVisible: { left: true, leftMid: true, mid: true, rightMid: true, right: true },
+  showLogos: true,
   leftBoxColor: '#b40808', leftBoxText: '#ffffff',
   leftMidBoxColor: '#000000', leftMidBoxText: '#ffffff',
   midBoxColor: '#de0b0b', midBoxText: '#ffffff',

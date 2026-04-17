@@ -13,7 +13,6 @@ export function useSportlinkAuth() {
         try {
             const url        = `https://app-${appCreds.apiUrl}-production.sportlink.com/oauth/token`;
             const proxiedUrl = `https://cors-proxy.clubinfoproxy.workers.dev/proxy?url=${encodeURIComponent(url)}`;
-            const toast      = useToast();
 
             const params = new URLSearchParams();
             params.append('grant_type', 'password');
@@ -28,10 +27,12 @@ export function useSportlinkAuth() {
                 body:    params,
             });
 
-            if (response.status === 401) {
-                toast.error(`Inloggen bij Sportlink is mislukt met gebruikersnaam: ${username}`, { timeout: 5000 });
+            if (!response.ok) {
+                if (window.scvConfig?.debug) {
+                    useToast().error(`Inloggen bij Sportlink mislukt (${response.status}) — gebruikersnaam: ${username}`, { timeout: 5000 });
+                }
+                throw new Error(`HTTP error ${response.status}`);
             }
-            if (!response.ok) throw new Error(`HTTP error ${response.status}`);
 
             const { access_token, refresh_token, expires_in } = await response.json();
             sportlinkTokenInfo.value = {
@@ -40,7 +41,9 @@ export function useSportlinkAuth() {
                 expires_at: Date.now() + expires_in * 1000
             };
 
-            toast.success('Sportlink Proxy met success ingelogd', { timeout: 5000 });
+            if (window.scvConfig?.debug) {
+                useToast().success('Sportlink Proxy ingelogd', { timeout: 5000 });
+            }
             localStorage.setItem('sportlinkTokenInfo', JSON.stringify(sportlinkTokenInfo.value));
             return true;
         } catch (error) {

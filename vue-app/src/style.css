@@ -97,23 +97,23 @@
 }
 
 #datumUitslag_fixed {
-  width: 10%;
+  flex: 2;
   padding: 18px 10px;
   letter-spacing: 0.03em;
 }
 
 #datumProgramma_fixed {
-  width: 10%;
+  flex: 2;
   padding: 10px 10px;
   letter-spacing: 0.03em;
 }
 
-#thuisteam_fixed  { width: 45%; padding: 18px 16px; }
-#uitteam_fixed    { width: 45%; padding: 18px 16px; }
-#kleedkamer_fixed { width: 20%; padding: 18px 10px; }
+#thuisteam_fixed  { flex: 9; padding: 18px 16px; }
+#uitteam_fixed    { flex: 9; padding: 18px 16px; }
+#kleedkamer_fixed { flex: 4; padding: 18px 10px; }
 
 #wedstrijdveld_fixed {
-  width: 15%;
+  flex: 3;
   padding: 18px 10px;
   letter-spacing: 0.04em;
   box-shadow: none;

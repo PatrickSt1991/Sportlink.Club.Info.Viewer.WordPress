@@ -62,6 +62,9 @@ class SCV_Admin {
         register_setting( 'scv_style', 'scv_colors', [
             'sanitize_callback' => [ __CLASS__, 'sanitize_colors' ],
         ] );
+        register_setting( 'scv_style', 'scv_layout', [
+            'sanitize_callback' => [ __CLASS__, 'sanitize_layout' ],
+        ] );
 
         // ── Sponsors ──────────────────────────────────────────────────────────
         register_setting( 'scv_sponsors_group', 'scv_sponsors', [
@@ -78,6 +81,21 @@ class SCV_Admin {
         $clean = [];
         foreach ( $keys as $k ) {
             $clean[ $k ] = isset( $input[ $k ] ) ? sanitize_hex_color( $input[ $k ] ) : '#000000';
+        }
+        return $clean;
+    }
+
+    public static function sanitize_layout( $input ) {
+        $input = is_array( $input ) ? $input : [];
+        $width_keys   = [ 'leftWidth', 'leftMidWidth', 'midWidth', 'rightMidWidth', 'rightWidth' ];
+        $visible_keys = [ 'leftVisible', 'leftMidVisible', 'midVisible', 'rightMidVisible', 'rightVisible', 'showLogos' ];
+        $clean = [];
+        foreach ( $width_keys as $k ) {
+            $val       = isset( $input[ $k ] ) ? (int) $input[ $k ] : 1;
+            $clean[ $k ] = max( 1, min( 20, $val ) );
+        }
+        foreach ( $visible_keys as $k ) {
+            $clean[ $k ] = isset( $input[ $k ] ) ? 1 : 0;
         }
         return $clean;
     }
@@ -360,35 +378,42 @@ class SCV_Admin {
 
     private static function render_style_tab() {
         $colors = get_option( 'scv_colors', [] );
-        $defaults = [
+        $color_defaults = [
             'leftBoxColor'     => '#b40808', 'leftBoxText'      => '#ffffff',
             'leftMidBoxColor'  => '#000000', 'leftMidBoxText'   => '#ffffff',
             'midBoxColor'      => '#de0b0b', 'midBoxText'       => '#ffffff',
             'rightMidBoxColor' => '#000000', 'rightMidBoxText'  => '#ffffff',
             'rightBoxColor'    => '#b40808', 'rightBoxText'     => '#ffffff',
         ];
-        $c = array_merge( $defaults, (array) $colors );
+        $c = array_merge( $color_defaults, (array) $colors );
+
+        $layout_defaults = [
+            'leftWidth' => 2, 'leftMidWidth' => 9, 'midWidth' => 4, 'rightMidWidth' => 9, 'rightWidth' => 3,
+            'leftVisible' => 1, 'leftMidVisible' => 1, 'midVisible' => 1, 'rightMidVisible' => 1, 'rightVisible' => 1,
+            'showLogos' => 1,
+        ];
+        $l = array_merge( $layout_defaults, (array) get_option( 'scv_layout', [] ) );
 
         $sections = [
-            'left'     => [ 'label' => __( 'Links', 'sportlink-club-viewer' ),       'bg' => 'leftBoxColor',     'text' => 'leftBoxText' ],
-            'leftMid'  => [ 'label' => __( 'Links midden', 'sportlink-club-viewer' ), 'bg' => 'leftMidBoxColor',  'text' => 'leftMidBoxText' ],
-            'mid'      => [ 'label' => __( 'Midden', 'sportlink-club-viewer' ),       'bg' => 'midBoxColor',      'text' => 'midBoxText' ],
-            'rightMid' => [ 'label' => __( 'Rechts midden', 'sportlink-club-viewer' ),'bg' => 'rightMidBoxColor', 'text' => 'rightMidBoxText' ],
-            'right'    => [ 'label' => __( 'Rechts', 'sportlink-club-viewer' ),       'bg' => 'rightBoxColor',    'text' => 'rightBoxText' ],
+            'left'     => [ 'label' => __( 'Links — Datum', 'sportlink-club-viewer' ),              'bg' => 'leftBoxColor',     'text' => 'leftBoxText',     'widthKey' => 'leftWidth',     'visKey' => 'leftVisible' ],
+            'leftMid'  => [ 'label' => __( 'Links midden — Thuisteam', 'sportlink-club-viewer' ),   'bg' => 'leftMidBoxColor',  'text' => 'leftMidBoxText',  'widthKey' => 'leftMidWidth',  'visKey' => 'leftMidVisible' ],
+            'mid'      => [ 'label' => __( 'Midden — Aanvang / Uitslag', 'sportlink-club-viewer' ), 'bg' => 'midBoxColor',      'text' => 'midBoxText',      'widthKey' => 'midWidth',      'visKey' => 'midVisible' ],
+            'rightMid' => [ 'label' => __( 'Rechts midden — Gasten', 'sportlink-club-viewer' ),     'bg' => 'rightMidBoxColor', 'text' => 'rightMidBoxText', 'widthKey' => 'rightMidWidth', 'visKey' => 'rightMidVisible' ],
+            'right'    => [ 'label' => __( 'Rechts — Competitie', 'sportlink-club-viewer' ),        'bg' => 'rightBoxColor',    'text' => 'rightBoxText',    'widthKey' => 'rightWidth',    'visKey' => 'rightVisible' ],
         ];
         ?>
         <form method="post" action="options.php" id="scv-style-form">
             <?php settings_fields( 'scv_style' ); ?>
 
             <div class="scv-section">
-                <h2><?php esc_html_e( 'Kleurenschema', 'sportlink-club-viewer' ); ?></h2>
-                <p class="description"><?php esc_html_e( 'Kies een achtergrond- en tekstkleur voor elk van de 5 kolommen.', 'sportlink-club-viewer' ); ?></p>
+                <h2><?php esc_html_e( 'Kolommen', 'sportlink-club-viewer' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Stel kleur, breedte en zichtbaarheid in per kolom. Breedte is een verhouding: hogere waarde = bredere kolom.', 'sportlink-club-viewer' ); ?></p>
 
                 <!-- Live preview -->
                 <div class="scv-color-preview" id="scv-color-preview">
                     <?php foreach ( $sections as $key => $sec ) : ?>
                         <div class="scv-preview-col" id="preview-<?php echo esc_attr( $key ); ?>"
-                             style="background:<?php echo esc_attr( $c[ $sec['bg'] ] ); ?>;color:<?php echo esc_attr( $c[ $sec['text'] ] ); ?>">
+                             style="background:<?php echo esc_attr( $c[ $sec['bg'] ] ); ?>;color:<?php echo esc_attr( $c[ $sec['text'] ] ); ?>;flex:<?php echo esc_attr( $l[ $sec['widthKey'] ] ); ?>;<?php echo $l[ $sec['visKey'] ] ? '' : 'display:none;'; ?>">
                             <?php echo esc_html( $sec['label'] ); ?>
                         </div>
                     <?php endforeach; ?>
@@ -415,9 +440,35 @@ class SCV_Admin {
                                    class="scv-color-picker"
                                    data-preview-col="<?php echo esc_attr( $key ); ?>"
                                    data-preview-prop="color">
+                            <span class="scv-color-label" style="margin-left:16px;"><?php esc_html_e( 'Breedte', 'sportlink-club-viewer' ); ?></span>
+                            <input type="number"
+                                   name="scv_layout[<?php echo esc_attr( $sec['widthKey'] ); ?>]"
+                                   value="<?php echo esc_attr( $l[ $sec['widthKey'] ] ); ?>"
+                                   min="1" max="20" step="1"
+                                   class="small-text scv-layout-width"
+                                   data-preview-col="<?php echo esc_attr( $key ); ?>">
+                            <label style="margin-left:12px;">
+                                <input type="checkbox"
+                                       name="scv_layout[<?php echo esc_attr( $sec['visKey'] ); ?>]"
+                                       value="1"
+                                       <?php checked( 1, $l[ $sec['visKey'] ] ); ?>
+                                       class="scv-layout-visible"
+                                       data-preview-col="<?php echo esc_attr( $key ); ?>">
+                                <?php esc_html_e( 'Zichtbaar', 'sportlink-club-viewer' ); ?>
+                            </label>
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Logo\'s', 'sportlink-club-viewer' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="scv_layout[showLogos]" value="1"
+                                    <?php checked( 1, $l['showLogos'] ); ?>>
+                                <?php esc_html_e( 'Logo\'s weergeven (programma & uitslagen)', 'sportlink-club-viewer' ); ?>
+                            </label>
+                        </td>
+                    </tr>
                 </table>
             </div>
 
@@ -516,6 +567,13 @@ class SCV_Admin {
         ];
         $c = array_merge( $color_defaults, $colors );
 
+        $layout_defaults = [
+            'leftWidth' => 2, 'leftMidWidth' => 9, 'midWidth' => 4, 'rightMidWidth' => 9, 'rightWidth' => 3,
+            'leftVisible' => 1, 'leftMidVisible' => 1, 'midVisible' => 1, 'rightMidVisible' => 1, 'rightVisible' => 1,
+            'showLogos' => 1,
+        ];
+        $l = array_merge( $layout_defaults, (array) get_option( 'scv_layout', [] ) );
+
         return [
             'appType'            => $app_type,
             'gameTypeLabel'      => get_option( 'scv_game_type_label', '' ),
@@ -535,6 +593,22 @@ class SCV_Admin {
             'debug'              => (bool) get_option( 'scv_debug_mode', 0 ),
             'selectedBackground' => get_option( 'scv_background_url', '' ),
             'sponsorImages'      => array_values( $sponsors ),
+            // Layout
+            'columnWidths'  => [
+                'left'     => (int) $l['leftWidth'],
+                'leftMid'  => (int) $l['leftMidWidth'],
+                'mid'      => (int) $l['midWidth'],
+                'rightMid' => (int) $l['rightMidWidth'],
+                'right'    => (int) $l['rightWidth'],
+            ],
+            'columnVisible' => [
+                'left'     => (bool) $l['leftVisible'],
+                'leftMid'  => (bool) $l['leftMidVisible'],
+                'mid'      => (bool) $l['midVisible'],
+                'rightMid' => (bool) $l['rightMidVisible'],
+                'right'    => (bool) $l['rightVisible'],
+            ],
+            'showLogos'     => (bool) $l['showLogos'],
             // Colors
             'leftBoxColor'       => $c['leftBoxColor'],
             'leftBoxText'        => $c['leftBoxText'],

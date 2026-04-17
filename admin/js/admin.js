@@ -256,6 +256,19 @@
         },
     } );
 
+    // ── Column width / visibility live preview ────────────────────────────────
+
+    $( '.scv-layout-width' ).on( 'input change', function () {
+        const col   = $( this ).data( 'preview-col' );
+        const width = parseInt( $( this ).val(), 10 ) || 1;
+        $( '#preview-' + col ).css( 'flex', width );
+    } );
+
+    $( '.scv-layout-visible' ).on( 'change', function () {
+        const col = $( this ).data( 'preview-col' );
+        $( '#preview-' + col ).toggle( $( this ).is( ':checked' ) );
+    } );
+
     // ── Sponsors tab ──────────────────────────────────────────────────────────
 
     const MAX_SPONSORS = 13;

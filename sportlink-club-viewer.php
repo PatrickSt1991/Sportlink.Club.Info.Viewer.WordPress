@@ -52,6 +52,12 @@ register_activation_hook( __FILE__, function () {
             'rightBoxText'     => '#ffffff',
         ],
         'scv_sponsors' => [],
+        'scv_layout'   => [
+            'leftWidth'       => 2,  'leftMidWidth'    => 9, 'midWidth'        => 4,
+            'rightMidWidth'   => 9,  'rightWidth'      => 3,
+            'leftVisible'     => 1,  'leftMidVisible'  => 1, 'midVisible'      => 1,
+            'rightMidVisible' => 1,  'rightVisible'    => 1, 'showLogos'       => 1,
+        ],
     ];
     foreach ( $defaults as $key => $value ) {
         if ( false === get_option( $key ) ) {
