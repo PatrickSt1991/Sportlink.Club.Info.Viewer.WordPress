@@ -474,4 +474,155 @@
 
     updateSponsorCount();
 
+    // ── Shortcode copy buttons ────────────────────────────────────────────────
+
+    $( document ).on( 'click', '.scv-copy-shortcode', function () {
+        const code = $( this ).data( 'shortcode' );
+        const $btn = $( this );
+        const doCopy = function () {
+            $btn.text( 'Gekopieerd!' ).prop( 'disabled', true );
+            setTimeout( function () {
+                $btn.text( 'Kopieer' ).prop( 'disabled', false );
+            }, 1500 );
+        };
+        if ( navigator.clipboard ) {
+            navigator.clipboard.writeText( code ).then( doCopy ).catch( function () {
+                const el = document.createElement( 'textarea' );
+                el.value = code;
+                document.body.appendChild( el );
+                el.select();
+                document.execCommand( 'copy' );
+                document.body.removeChild( el );
+                doCopy();
+            } );
+        } else {
+            const el = document.createElement( 'textarea' );
+            el.value = code;
+            document.body.appendChild( el );
+            el.select();
+            document.execCommand( 'copy' );
+            document.body.removeChild( el );
+            doCopy();
+        }
+    } );
+
+    // ── Test connection ───────────────────────────────────────────────────────
+
+    if ( typeof scvAdmin.connectionStatus !== 'undefined' ) {
+        $( '#scv-status-dot' ).attr( 'data-status', scvAdmin.connectionStatus );
+    }
+
+    $( '#scv-test-connection' ).on( 'click', function () {
+        const $btn     = $( this );
+        const $spinner = $( '#scv-test-spinner' );
+        const $status  = $( '#scv-test-status' );
+        const $dot     = $( '#scv-status-dot' );
+
+        $btn.prop( 'disabled', true );
+        $spinner.show();
+        $status.text( 'Testen…' ).removeClass( 'scv-error scv-success' );
+
+        $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data: {
+                action:          'scv_test_connection',
+                nonce:           scvAdmin.nonce,
+                connection_type: $( '#scv_connection_type' ).val(),
+                client_id:       $( '#scv_client_id' ).val(),
+                game_type_label: $( '#scv_game_type_label' ).val(),
+                username:        $( '#scv_username' ).val(),
+            },
+        } )
+        .done( function ( response ) {
+            if ( response.success ) {
+                $status.text( '✓ ' + response.data.message ).addClass( 'scv-success' );
+                $dot.attr( 'data-status', 'ok' );
+            } else {
+                $status.text( '✗ ' + ( response.data?.message || 'Verbinding mislukt.' ) ).addClass( 'scv-error' );
+                $dot.attr( 'data-status', 'error' );
+            }
+        } )
+        .fail( function () {
+            $status.text( 'Verbindingsfout. Probeer opnieuw.' ).addClass( 'scv-error' );
+            $dot.attr( 'data-status', 'error' );
+        } )
+        .always( function () {
+            $btn.prop( 'disabled', false );
+            $spinner.hide();
+        } );
+    } );
+
+    // ── Clear connection fields (general tab) ────────────────────────────────
+
+    $( '#scv-clear-connection' ).on( 'click', function () {
+        $( '#scv_client_id' ).val( '' );
+        $( '#scv_username' ).val( '' );
+        $( '#scv_password' ).val( '' );
+        $( '#scv_club_identifier' ).val( '' );
+        $( '#scv_club_id' ).val( '' );
+        $( '#scv-club-select-wrap' ).hide();
+        $( '#scv-test-status, #scv-verify-status, #scv-fetch-status' )
+            .text( '' ).removeClass( 'scv-error scv-success' );
+        $( '#scv-status-dot' ).attr( 'data-status', 'unknown' );
+        updateStandingsVisibility();
+    } );
+
+    // ── Reset to defaults (style tab) ────────────────────────────────────────
+
+    $( '#scv-reset-defaults' ).on( 'click', function () {
+        if ( ! confirm( 'Stijl terugzetten naar standaardwaarden? Niet-opgeslagen wijzigingen gaan verloren.' ) ) return;
+
+        const colorDefs = {
+            'scv_colors[leftBoxColor]':     '#b40808',
+            'scv_colors[leftBoxText]':      '#ffffff',
+            'scv_colors[leftMidBoxColor]':  '#000000',
+            'scv_colors[leftMidBoxText]':   '#ffffff',
+            'scv_colors[midBoxColor]':      '#de0b0b',
+            'scv_colors[midBoxText]':       '#ffffff',
+            'scv_colors[rightMidBoxColor]': '#000000',
+            'scv_colors[rightMidBoxText]':  '#ffffff',
+            'scv_colors[rightBoxColor]':    '#b40808',
+            'scv_colors[rightBoxText]':     '#ffffff',
+            'scv_own_team_colors[bg]':      '#1a5c1a',
+            'scv_own_team_colors[text]':    '#ffffff',
+        };
+        Object.entries( colorDefs ).forEach( function ( [ name, val ] ) {
+            $( '[name="' + name + '"]' ).wpColorPicker( 'color', val );
+        } );
+
+        const widthDefs = { leftWidth: 2, leftMidWidth: 9, midWidth: 4, rightMidWidth: 9, rightWidth: 3 };
+        Object.entries( widthDefs ).forEach( function ( [ key, val ] ) {
+            $( '[name="scv_layout[' + key + ']"]' ).val( val ).trigger( 'input' );
+        } );
+
+        [ 'leftVisible', 'leftMidVisible', 'midVisible', 'rightMidVisible', 'rightVisible', 'showLogos' ].forEach( function ( key ) {
+            const $el = $( '[name="scv_layout[' + key + ']"]' );
+            if ( ! $el.is( ':checked' ) ) $el.prop( 'checked', true ).trigger( 'change' );
+        } );
+
+        [ 'totalMatches', 'won', 'draw', 'lost', 'goalsFor', 'goalsAgainst', 'goalsDiff', 'points' ].forEach( function ( key ) {
+            $( '[name="scv_standing_columns[' + key + ']"]' ).prop( 'checked', true );
+        } );
+    } );
+
+    // ── Unsaved changes warning ───────────────────────────────────────────────
+
+    let scvFormDirty = false;
+
+    $( '#scv-general-form, #scv-style-form, #scv-sponsors-form' ).on( 'change input', function () {
+        scvFormDirty = true;
+    } );
+
+    $( '#scv-general-form, #scv-style-form, #scv-sponsors-form' ).on( 'submit', function () {
+        scvFormDirty = false;
+    } );
+
+    window.addEventListener( 'beforeunload', function ( e ) {
+        if ( scvFormDirty ) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    } );
+
 } )( jQuery );

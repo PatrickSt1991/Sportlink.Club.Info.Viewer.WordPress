@@ -8,6 +8,7 @@ class SCV_Ajax {
         add_action( 'wp_ajax_scv_fetch_teams',        [ __CLASS__, 'fetch_teams' ] );
         add_action( 'wp_ajax_scv_fetch_competitions', [ __CLASS__, 'fetch_competitions' ] );
         add_action( 'wp_ajax_scv_verify_client',      [ __CLASS__, 'verify_client' ] );
+        add_action( 'wp_ajax_scv_test_connection',    [ __CLASS__, 'test_connection' ] );
     }
 
     // ── Fetch club list ───────────────────────────────────────────────────────
@@ -533,7 +534,7 @@ class SCV_Ajax {
             wp_send_json_error( [ 'message' => __( 'Geen client ID opgegeven.', 'sportlink-club-viewer' ) ] );
         }
 
-        $url      = "https://data.sportlink.com/vereniging?client_id={$client_id}";
+        $url      = "https://data.sportlink.com/clubgegevens?client_id={$client_id}";
         $response = wp_remote_get( $url, [ 'timeout' => 10 ] );
 
         if ( is_wp_error( $response ) ) {
@@ -553,6 +554,99 @@ class SCV_Ajax {
         } else {
             wp_send_json_error( [ 'message' => __( 'Client ID niet gevonden of ongeldig.', 'sportlink-club-viewer' ) ] );
         }
+    }
+
+    // ── Test connection ───────────────────────────────────────────────────────
+
+    public static function test_connection() {
+        check_ajax_referer( 'scv_admin_nonce', 'nonce' );
+
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_send_json_error( [ 'message' => __( 'Geen toegang.', 'sportlink-club-viewer' ) ], 403 );
+        }
+
+        $connection_type = sanitize_text_field( $_POST['connection_type'] ?? '' ) ?: get_option( 'scv_connection_type', '' );
+        $client_id       = sanitize_text_field( $_POST['client_id']       ?? '' ) ?: get_option( 'scv_client_id', '' );
+        $game_type_label = sanitize_text_field( $_POST['game_type_label'] ?? '' ) ?: get_option( 'scv_game_type_label', '' );
+        $username        = sanitize_text_field( $_POST['username']        ?? '' ) ?: get_option( 'scv_username', '' );
+        $password        = get_option( 'scv_password', '' );
+
+        $status = [ 'status' => 'unknown', 'time' => time(), 'message' => '' ];
+
+        switch ( $connection_type ) {
+            case 'Sportlink API':
+                if ( empty( $client_id ) ) {
+                    wp_send_json_error( [ 'message' => __( 'Geen client ID ingevuld.', 'sportlink-club-viewer' ) ] );
+                }
+                $resp = wp_remote_get( "https://data.sportlink.com/clubgegevens?client_id={$client_id}", [ 'timeout' => 10 ] );
+                if ( is_wp_error( $resp ) ) {
+                    $status['status'] = 'error'; $status['message'] = $resp->get_error_message();
+                    update_option( 'scv_connection_status', $status );
+                    wp_send_json_error( [ 'message' => $status['message'] ] );
+                }
+                $body = json_decode( wp_remote_retrieve_body( $resp ), true );
+                if ( empty( $body[0]['naam'] ) ) {
+                    $msg = __( 'Client ID niet gevonden of ongeldig.', 'sportlink-club-viewer' );
+                    $status['status'] = 'error'; $status['message'] = $msg;
+                    update_option( 'scv_connection_status', $status );
+                    wp_send_json_error( [ 'message' => $msg ] );
+                }
+                $name = sanitize_text_field( $body[0]['naam'] );
+                $status['status']  = 'ok';
+                $status['message'] = sprintf( __( 'Verbonden met %s', 'sportlink-club-viewer' ), $name );
+                break;
+
+            case 'Sportlink Proxy':
+                $app_creds = self::get_app_credentials( $game_type_label );
+                if ( ! $app_creds ) {
+                    wp_send_json_error( [ 'message' => __( 'Geen API-gegevens voor dit sporttype.', 'sportlink-club-viewer' ) ] );
+                }
+                if ( empty( $username ) || empty( $password ) ) {
+                    wp_send_json_error( [ 'message' => __( 'Gebruikersnaam en wachtwoord vereist.', 'sportlink-club-viewer' ) ] );
+                }
+                $base_url   = "https://app-{$app_creds['apiUrl']}-production.sportlink.com";
+                $token_resp = wp_remote_post( "{$base_url}/oauth/token", [
+                    'timeout' => 15,
+                    'headers' => [ 'Content-Type' => 'application/x-www-form-urlencoded', 'User-Agent' => 'okhttp/4.12.0' ],
+                    'body'    => [
+                        'grant_type' => 'password', 'username' => $username, 'password' => $password,
+                        'client_id'  => $app_creds['client_id'], 'secret' => $app_creds['secret'],
+                    ],
+                ] );
+                if ( is_wp_error( $token_resp ) ) {
+                    $status['status'] = 'error'; $status['message'] = $token_resp->get_error_message();
+                    update_option( 'scv_connection_status', $status );
+                    wp_send_json_error( [ 'message' => $status['message'] ] );
+                }
+                $token_body = json_decode( wp_remote_retrieve_body( $token_resp ), true );
+                if ( empty( $token_body['access_token'] ) ) {
+                    $msg = __( 'Inloggen mislukt. Controleer gebruikersnaam en wachtwoord.', 'sportlink-club-viewer' );
+                    $status['status'] = 'error'; $status['message'] = $msg;
+                    update_option( 'scv_connection_status', $status );
+                    wp_send_json_error( [ 'message' => $msg ] );
+                }
+                $status['status']  = 'ok';
+                $status['message'] = __( 'Inloggen gelukt. Verbinding actief.', 'sportlink-club-viewer' );
+                break;
+
+            case 'Nevobo Proxy':
+                $resp = wp_remote_get( 'https://api.nevobo.nl/relatiebeheer/verenigingen?page=1', [ 'timeout' => 10 ] );
+                if ( is_wp_error( $resp ) || wp_remote_retrieve_response_code( $resp ) !== 200 ) {
+                    $msg = __( 'Nevobo API niet bereikbaar.', 'sportlink-club-viewer' );
+                    $status['status'] = 'error'; $status['message'] = $msg;
+                    update_option( 'scv_connection_status', $status );
+                    wp_send_json_error( [ 'message' => $msg ] );
+                }
+                $status['status']  = 'ok';
+                $status['message'] = __( 'Nevobo API bereikbaar.', 'sportlink-club-viewer' );
+                break;
+
+            default:
+                wp_send_json_error( [ 'message' => __( 'Geen verbindingstype geselecteerd.', 'sportlink-club-viewer' ) ] );
+        }
+
+        update_option( 'scv_connection_status', $status );
+        wp_send_json_success( [ 'message' => $status['message'] ] );
     }
 
     // ── App credentials (mirrors Vue config.js APP_CREDENTIALS) ──────────────

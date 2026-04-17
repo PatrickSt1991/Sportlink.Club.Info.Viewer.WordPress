@@ -30,18 +30,17 @@
             v-for="team in teams"
             :key="team.PublicTeamId || team.Position"
             class="matchEntry"
-            :class="{ 'scv-own-team': isOwnTeam(team) }"
           >
-            <div :style="posStyle">{{ team.Position }}</div>
-            <div :style="nameStyle">{{ team.TeamName }}</div>
-            <div v-if="cols.totalMatches" :style="statStyle">{{ team.TotalMatches }}</div>
-            <div v-if="cols.won"          :style="statStyle">{{ team.Won }}</div>
-            <div v-if="cols.draw"         :style="statStyle">{{ team.Draw }}</div>
-            <div v-if="cols.lost"         :style="statStyle">{{ team.Lost }}</div>
-            <div v-if="cols.goalsFor"     :style="goalStyle">{{ team.GoalsFor }}</div>
-            <div v-if="cols.goalsAgainst" :style="goalStyle">{{ team.GoalsAgainst }}</div>
-            <div v-if="cols.goalsDiff"    :style="goalStyle">{{ fmtDiff(team.GoalsDifference) }}</div>
-            <div v-if="cols.points"       :style="ptsStyle">{{ team.TotalPoints }}</div>
+            <div :style="rowStyle(posStyle, team)">{{ team.Position }}</div>
+            <div :style="rowStyle(nameStyle, team)">{{ team.TeamName }}</div>
+            <div v-if="cols.totalMatches" :style="rowStyle(statStyle, team)">{{ team.TotalMatches }}</div>
+            <div v-if="cols.won"          :style="rowStyle(statStyle, team)">{{ team.Won }}</div>
+            <div v-if="cols.draw"         :style="rowStyle(statStyle, team)">{{ team.Draw }}</div>
+            <div v-if="cols.lost"         :style="rowStyle(statStyle, team)">{{ team.Lost }}</div>
+            <div v-if="cols.goalsFor"     :style="rowStyle(goalStyle, team)">{{ team.GoalsFor }}</div>
+            <div v-if="cols.goalsAgainst" :style="rowStyle(goalStyle, team)">{{ team.GoalsAgainst }}</div>
+            <div v-if="cols.goalsDiff"    :style="rowStyle(goalStyle, team)">{{ fmtDiff(team.GoalsDifference) }}</div>
+            <div v-if="cols.points"       :style="rowStyle(ptsStyle, team)">{{ team.TotalPoints }}</div>
           </div>
         </div>
 
@@ -112,6 +111,16 @@ const ptsStyle  = computed(() => ({
 
 function isOwnTeam(team) {
   return team.LocalTeam === true || team.PublicTeamId === config.value.standingTeamId;
+}
+
+function rowStyle(base, team) {
+  if (!isOwnTeam(team)) return base;
+  return {
+    ...base,
+    background: config.value.ownTeamBg   || '#1a5c1a',
+    color:      config.value.ownTeamText || '#ffffff',
+    fontWeight: '700',
+  };
 }
 
 function fmtDiff(n) {

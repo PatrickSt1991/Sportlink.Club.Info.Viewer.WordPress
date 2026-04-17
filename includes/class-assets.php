@@ -6,6 +6,7 @@ class SCV_Assets {
     public static function init() {
         add_action( 'wp_enqueue_scripts', [ __CLASS__, 'register_frontend' ] );
         add_action( 'admin_enqueue_scripts', [ __CLASS__, 'enqueue_admin' ] );
+        add_action( 'enqueue_block_editor_assets', [ __CLASS__, 'enqueue_block_editor' ] );
     }
 
     /**
@@ -61,10 +62,26 @@ class SCV_Assets {
             true
         );
 
+        $conn_status_opt = get_option( 'scv_connection_status', [] );
         wp_localize_script( 'scv-admin', 'scvAdmin', [
-            'ajaxUrl'   => admin_url( 'admin-ajax.php' ),
-            'nonce'     => wp_create_nonce( 'scv_admin_nonce' ),
-            'debugMode' => (bool) get_option( 'scv_debug_mode', 0 ),
+            'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+            'nonce'            => wp_create_nonce( 'scv_admin_nonce' ),
+            'debugMode'        => (bool) get_option( 'scv_debug_mode', 0 ),
+            'connectionStatus' => is_array( $conn_status_opt ) ? ( $conn_status_opt['status'] ?? 'unknown' ) : 'unknown',
         ] );
+    }
+
+    public static function enqueue_block_editor() {
+        $block_js = SCV_PLUGIN_DIR . 'blocks/sportlink-viewer.js';
+        if ( ! file_exists( $block_js ) ) {
+            return;
+        }
+        wp_enqueue_script(
+            'scv-block',
+            SCV_PLUGIN_URL . 'blocks/sportlink-viewer.js',
+            [ 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element' ],
+            SCV_VERSION,
+            true
+        );
     }
 }

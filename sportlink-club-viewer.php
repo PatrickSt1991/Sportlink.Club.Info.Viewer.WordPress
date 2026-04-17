@@ -31,6 +31,21 @@ add_action( 'plugins_loaded', function () {
     SCV_Shortcodes::init();
 } );
 
+add_action( 'init', function () {
+    register_block_type( 'sportlink-club-viewer/display', [
+        'attributes'      => [
+            'displayType' => [ 'type' => 'string', 'default' => 'match' ],
+        ],
+        'render_callback' => function ( $attrs ) {
+            switch ( $attrs['displayType'] ?? 'match' ) {
+                case 'prematch':  return do_shortcode( '[sportlink_prematch_display]' );
+                case 'standings': return do_shortcode( '[sportlink_standing_display]' );
+                default:          return do_shortcode( '[sportlink_match_display]' );
+            }
+        },
+    ] );
+} );
+
 register_activation_hook( __FILE__, function () {
     // Set default options on first activation
     $defaults = [
@@ -63,6 +78,8 @@ register_activation_hook( __FILE__, function () {
         'scv_standing_team_name'  => '',
         'scv_standing_pool_id'    => '',
         'scv_standing_pool_name'  => '',
+        'scv_own_team_colors'     => [ 'bg' => '#1a5c1a', 'text' => '#ffffff' ],
+        'scv_connection_status'   => [ 'status' => 'unknown', 'time' => 0, 'message' => '' ],
         'scv_layout'   => [
             'leftWidth'       => 2,  'leftMidWidth'    => 9, 'midWidth'        => 4,
             'rightMidWidth'   => 9,  'rightWidth'      => 3,

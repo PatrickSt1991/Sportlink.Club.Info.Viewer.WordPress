@@ -76,6 +76,9 @@ class SCV_Admin {
         register_setting( 'scv_style', 'scv_standing_columns', [
             'sanitize_callback' => [ __CLASS__, 'sanitize_standing_columns' ],
         ] );
+        register_setting( 'scv_style', 'scv_own_team_colors', [
+            'sanitize_callback' => [ __CLASS__, 'sanitize_own_team_colors' ],
+        ] );
 
         // ── Sponsors ──────────────────────────────────────────────────────────
         register_setting( 'scv_sponsors_group', 'scv_sponsors', [
@@ -121,6 +124,14 @@ class SCV_Admin {
         return $clean;
     }
 
+    public static function sanitize_own_team_colors( $input ) {
+        $input = is_array( $input ) ? $input : [];
+        return [
+            'bg'   => sanitize_hex_color( $input['bg']   ?? '#1a5c1a' ) ?: '#1a5c1a',
+            'text' => sanitize_hex_color( $input['text'] ?? '#ffffff' ) ?: '#ffffff',
+        ];
+    }
+
     public static function sanitize_sponsors( $input ) {
         if ( ! is_array( $input ) ) return [];
         return array_values( array_filter( array_map( 'esc_url_raw', $input ) ) );
@@ -137,11 +148,14 @@ class SCV_Admin {
             'style'    => __( 'Stijl', 'sportlink-club-viewer' ),
             'sponsors' => __( 'Sponsors', 'sportlink-club-viewer' ),
         ];
+        $conn_status_opt = get_option( 'scv_connection_status', [] );
+        $dot_status      = is_array( $conn_status_opt ) ? ( $conn_status_opt['status'] ?? 'unknown' ) : 'unknown';
         ?>
         <div class="wrap scv-wrap">
             <h1>
                 <span class="scv-logo">⚽</span>
                 <?php esc_html_e( 'Sportlink Club Viewer', 'sportlink-club-viewer' ); ?>
+                <span id="scv-status-dot" data-status="<?php echo esc_attr( $dot_status ); ?>" title="<?php esc_attr_e( 'Verbindingsstatus', 'sportlink-club-viewer' ); ?>"></span>
             </h1>
 
             <nav class="nav-tab-wrapper scv-tabs">
@@ -167,9 +181,15 @@ class SCV_Admin {
                 <h3><?php esc_html_e( 'Shortcodes', 'sportlink-club-viewer' ); ?></h3>
                 <p><?php esc_html_e( 'Gebruik deze shortcodes op elke pagina of post:', 'sportlink-club-viewer' ); ?></p>
                 <ul>
-                    <li><code>[sportlink_match_display]</code> — <?php esc_html_e( 'Wedstrijdprogramma en uitslagen (wisselt automatisch als instelling actief is)', 'sportlink-club-viewer' ); ?></li>
-                    <li><code>[sportlink_prematch_display]</code> — <?php esc_html_e( 'Voorwedstrijdinformatie (kleedkamers & veld)', 'sportlink-club-viewer' ); ?></li>
-                    <li><code>[sportlink_standing_display]</code> — <?php esc_html_e( 'Stand van het geconfigureerde team (Sportlink Proxy)', 'sportlink-club-viewer' ); ?></li>
+                    <li><code>[sportlink_match_display]</code>
+                        <button type="button" class="button button-small scv-copy-shortcode" data-shortcode="[sportlink_match_display]"><?php esc_html_e( 'Kopieer', 'sportlink-club-viewer' ); ?></button>
+                        — <?php esc_html_e( 'Wedstrijdprogramma en uitslagen (wisselt automatisch als instelling actief is)', 'sportlink-club-viewer' ); ?></li>
+                    <li><code>[sportlink_prematch_display]</code>
+                        <button type="button" class="button button-small scv-copy-shortcode" data-shortcode="[sportlink_prematch_display]"><?php esc_html_e( 'Kopieer', 'sportlink-club-viewer' ); ?></button>
+                        — <?php esc_html_e( 'Voorwedstrijdinformatie (kleedkamers & veld)', 'sportlink-club-viewer' ); ?></li>
+                    <li><code>[sportlink_standing_display]</code>
+                        <button type="button" class="button button-small scv-copy-shortcode" data-shortcode="[sportlink_standing_display]"><?php esc_html_e( 'Kopieer', 'sportlink-club-viewer' ); ?></button>
+                        — <?php esc_html_e( 'Stand van het geconfigureerde team', 'sportlink-club-viewer' ); ?></li>
                 </ul>
                 <p class="description"><?php esc_html_e( 'Tip: gebruik een paginasjabloon zonder kop/voettekst voor het beste weergaveresultaat op een scherm.', 'sportlink-club-viewer' ); ?></p>
             </div>
@@ -309,6 +329,21 @@ class SCV_Admin {
                             </button>
                             <span id="scv-verify-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
                             <p class="description" id="scv-verify-status"></p>
+                        </td>
+                    </tr>
+
+                    <!-- Test / clear connection -->
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Verbinding testen', 'sportlink-club-viewer' ); ?></th>
+                        <td>
+                            <button type="button" id="scv-test-connection" class="button button-secondary">
+                                <?php esc_html_e( 'Test verbinding', 'sportlink-club-viewer' ); ?>
+                            </button>
+                            <button type="button" id="scv-clear-connection" class="button button-secondary" style="margin-left:8px;">
+                                <?php esc_html_e( 'Velden wissen', 'sportlink-club-viewer' ); ?>
+                            </button>
+                            <span id="scv-test-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
+                            <p class="description" id="scv-test-status"></p>
                         </td>
                     </tr>
 
@@ -527,6 +562,9 @@ class SCV_Admin {
         ];
         $sc = array_merge( $sc_defaults, (array) get_option( 'scv_standing_columns', [] ) );
 
+        $ot_defaults = [ 'bg' => '#1a5c1a', 'text' => '#ffffff' ];
+        $ot = array_merge( $ot_defaults, (array) get_option( 'scv_own_team_colors', [] ) );
+
         $sections = [
             'left'     => [ 'label' => __( 'Links — Datum', 'sportlink-club-viewer' ),              'bg' => 'leftBoxColor',     'text' => 'leftBoxText',     'widthKey' => 'leftWidth',     'visKey' => 'leftVisible' ],
             'leftMid'  => [ 'label' => __( 'Links midden — Thuisteam', 'sportlink-club-viewer' ),   'bg' => 'leftMidBoxColor',  'text' => 'leftMidBoxText',  'widthKey' => 'leftMidWidth',  'visKey' => 'leftMidVisible' ],
@@ -638,6 +676,34 @@ class SCV_Admin {
                 </table>
             </div>
 
+            <!-- Own team highlight colours -->
+            <div class="scv-section">
+                <h2><?php esc_html_e( 'Eigen team markering', 'sportlink-club-viewer' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Achtergrond- en tekstkleur voor de eigen teamrij in de stand.', 'sportlink-club-viewer' ); ?></p>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Achtergrond / tekst', 'sportlink-club-viewer' ); ?></th>
+                        <td class="scv-color-row">
+                            <span class="scv-color-label"><?php esc_html_e( 'Achtergrond', 'sportlink-club-viewer' ); ?></span>
+                            <input type="text" name="scv_own_team_colors[bg]"
+                                   value="<?php echo esc_attr( $ot['bg'] ); ?>"
+                                   class="scv-color-picker">
+                            &nbsp;&nbsp;
+                            <span class="scv-color-label"><?php esc_html_e( 'Tekst', 'sportlink-club-viewer' ); ?></span>
+                            <input type="text" name="scv_own_team_colors[text]"
+                                   value="<?php echo esc_attr( $ot['text'] ); ?>"
+                                   class="scv-color-picker">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="scv-reset-row">
+                <button type="button" id="scv-reset-defaults" class="button button-secondary">
+                    <?php esc_html_e( 'Terugzetten naar standaard', 'sportlink-club-viewer' ); ?>
+                </button>
+            </div>
+
             <?php submit_button( __( 'Stijl opslaan', 'sportlink-club-viewer' ) ); ?>
         </form>
         <?php
@@ -724,6 +790,9 @@ class SCV_Admin {
         $colors   = (array) get_option( 'scv_colors', [] );
         $sponsors = (array) get_option( 'scv_sponsors', [] );
 
+        $ot_defaults = [ 'bg' => '#1a5c1a', 'text' => '#ffffff' ];
+        $ot = array_merge( $ot_defaults, (array) get_option( 'scv_own_team_colors', [] ) );
+
         $color_defaults = [
             'leftBoxColor'     => '#b40808', 'leftBoxText'      => '#ffffff',
             'leftMidBoxColor'  => '#000000', 'leftMidBoxText'   => '#ffffff',
@@ -767,6 +836,9 @@ class SCV_Admin {
             'displayHeight'      => (int)  get_option( 'scv_display_height', 0 ),
             'scrollSpeed'        => max( 1, (int) get_option( 'scv_scroll_speed', 2 ) ),
             'sponsorImages'      => array_values( $sponsors ),
+            // Own team highlight
+            'ownTeamBg'        => $ot['bg'],
+            'ownTeamText'      => $ot['text'],
             // Standings
             'enableStandings'  => (bool) get_option( 'scv_enable_standings', 0 ),
             'standingTeamId'   => get_option( 'scv_standing_team_id', '' ),

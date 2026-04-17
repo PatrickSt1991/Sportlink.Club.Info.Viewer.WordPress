@@ -144,11 +144,6 @@
 }
 
 /* ─── Standings ───────────────────────────────────────────── */
-.scv-own-team > div {
-  filter: brightness(1.25);
-  font-weight: 700;
-}
-
 .scv-standing-divider > div {
   flex: 1;
   padding: 10px 16px;
