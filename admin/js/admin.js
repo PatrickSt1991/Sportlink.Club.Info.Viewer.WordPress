@@ -14,12 +14,16 @@
     };
 
     function updateStandingsVisibility() {
-        const isProxy = $( '#scv_connection_type' ).val() === 'Sportlink Proxy';
-        const hasClub = !! $( '#scv_club_id' ).val();
-        const hasTeam = !! $( '#scv_standing_team_id' ).val();
-        $( '#scv-standings-team-row' ).toggle( isProxy && hasClub );
-        $( '#scv-standings-comp-row' ).toggle( isProxy && hasTeam );
-        $( '#scv-standings-no-proxy' ).toggle( ! isProxy );
+        const connType  = $( '#scv_connection_type' ).val();
+        const isProxy   = connType === 'Sportlink Proxy';
+        const isApi     = connType === 'Sportlink API';
+        const hasClub   = !! $( '#scv_club_id' ).val();
+        const hasClient = !! $( '#scv_client_id' ).val();
+        const hasTeam   = !! $( '#scv_standing_team_id' ).val();
+        const canFetch  = ( isProxy && hasClub ) || ( isApi && hasClient );
+        $( '#scv-standings-team-row' ).toggle( canFetch );
+        $( '#scv-standings-comp-row' ).toggle( canFetch && hasTeam );
+        $( '#scv-standings-no-proxy' ).toggle( ! isProxy && ! isApi );
     }
 
     function updateFieldVisibility() {
@@ -59,6 +63,7 @@
     $( '#scv_connection_type, #scv_game_type_label' ).on( 'change', updateFieldVisibility );
     $( '#scv_connection_type' ).on( 'change', updateStandingsVisibility );
     $( '#scv_club_id' ).on( 'change', updateStandingsVisibility );
+    $( '#scv_client_id' ).on( 'input change', updateStandingsVisibility );
     updateFieldVisibility();
     updateStandingsVisibility();
 
@@ -214,6 +219,8 @@
             data:   {
                 action:          'scv_fetch_teams',
                 nonce:           scvAdmin.nonce,
+                connection_type: $( '#scv_connection_type' ).val(),
+                client_id:       $( '#scv_client_id' ).val(),
                 club_id:         $( '#scv_club_id' ).val(),
                 game_type_label: $( '#scv_game_type_label' ).val(),
                 username:        $( '#scv_username' ).val(),
@@ -274,6 +281,8 @@
             data:   {
                 action:          'scv_fetch_competitions',
                 nonce:           scvAdmin.nonce,
+                connection_type: $( '#scv_connection_type' ).val(),
+                client_id:       $( '#scv_client_id' ).val(),
                 team_id:         $( '#scv_standing_team_id' ).val(),
                 game_type_label: $( '#scv_game_type_label' ).val(),
                 username:        $( '#scv_username' ).val(),

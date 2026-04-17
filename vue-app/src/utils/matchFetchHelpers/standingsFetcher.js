@@ -31,9 +31,42 @@ async function entityGet(url, appCreds, config, auth) {
   return response.json();
 }
 
-export async function fetchStandings(config) {
-  if (!config.standingPoolId) throw new Error('Geen competitie geconfigureerd voor standen.');
+// ── Sportlink API (client_id, no proxy) ───────────────────────────────────────
 
+async function fetchStandingsApi(config) {
+  const url = `https://data.sportlink.com/poulestand?poulecode=${config.standingPoolId}&gebruiklokaleteamgegevens=NEE&client_id=${config.clientId}`;
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+
+  if (window.scvConfig?.debug) {
+    console.group('SCV debug — standings: poulestand (API)');
+    console.log(data);
+    console.groupEnd();
+  }
+
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .sort((a, b) => (a.positie || 0) - (b.positie || 0))
+    .map(t => ({
+      Position:        t.positie,
+      TeamName:        t.teamnaam,
+      TotalMatches:    t.gespeeldewedstrijden,
+      Won:             t.gewonnen,
+      Draw:            t.gelijk,
+      Lost:            t.verloren,
+      GoalsFor:        t.doelpuntenvoor,
+      GoalsAgainst:    t.doelpuntentegen,
+      GoalsDifference: t.doelsaldo,
+      TotalPoints:     t.punten,
+      LocalTeam:       t.eigenteam === 'true' || t.eigenteam === true,
+    }));
+}
+
+// ── Sportlink Proxy ───────────────────────────────────────────────────────────
+
+async function fetchStandingsProxy(config) {
   const appCreds = APP_CREDENTIALS.find(
     c => c.type.toLowerCase() === (config.gameType?.label || '').toLowerCase()
   );
@@ -48,7 +81,7 @@ export async function fetchStandings(config) {
   );
 
   if (window.scvConfig?.debug) {
-    console.group('SCV debug — standings: PoolCompetitionData');
+    console.group('SCV debug — standings: PoolCompetitionData (proxy)');
     console.log(poolData);
     console.groupEnd();
   }
@@ -56,4 +89,15 @@ export async function fetchStandings(config) {
   return (poolData.PoolStanding?.PoolStandingTeam || [])
     .slice()
     .sort((a, b) => (a.Position || 0) - (b.Position || 0));
+}
+
+// ── Public entry point ────────────────────────────────────────────────────────
+
+export async function fetchStandings(config) {
+  if (!config.standingPoolId) throw new Error('Geen competitie geconfigureerd voor standen.');
+
+  if (config.connectionType === 'Sportlink API') {
+    return fetchStandingsApi(config);
+  }
+  return fetchStandingsProxy(config);
 }

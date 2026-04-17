@@ -173,6 +173,13 @@ class SCV_Ajax {
             wp_send_json_error( [ 'message' => __( 'Geen toegang.', 'sportlink-club-viewer' ) ], 403 );
         }
 
+        $connection_type = sanitize_text_field( $_POST['connection_type'] ?? '' ) ?: get_option( 'scv_connection_type', '' );
+
+        if ( $connection_type === 'Sportlink API' ) {
+            self::fetch_teams_sportlink_api();
+            return;
+        }
+
         $club_id         = sanitize_text_field( $_POST['club_id']         ?? '' ) ?: get_option( 'scv_club_id', '' );
         $game_type_label = sanitize_text_field( $_POST['game_type_label'] ?? '' ) ?: get_option( 'scv_game_type_label', '' );
         $username        = sanitize_text_field( $_POST['username']        ?? '' ) ?: get_option( 'scv_username', '' );
@@ -275,6 +282,86 @@ class SCV_Ajax {
         wp_send_json_success( [ 'teams' => $teams ] );
     }
 
+    // ── Sportlink API: fetch teams (no proxy, no OAuth) ───────────────────────
+
+    private static function fetch_teams_sportlink_api() {
+        $client_id = sanitize_text_field( $_POST['client_id'] ?? '' ) ?: get_option( 'scv_client_id', '' );
+
+        if ( empty( $client_id ) ) {
+            wp_send_json_error( [ 'message' => __( 'Geen client ID geconfigureerd.', 'sportlink-club-viewer' ) ] );
+        }
+
+        $url      = "https://data.sportlink.com/teams?gebruiklokaleteamgegevens=NEE&client_id={$client_id}";
+        $response = wp_remote_get( $url, [ 'timeout' => 15 ] );
+
+        if ( is_wp_error( $response ) ) {
+            wp_send_json_error( [ 'message' => $response->get_error_message() ] );
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( ! is_array( $body ) ) {
+            wp_send_json_error( [ 'message' => __( 'Ongeldig API-antwoord.', 'sportlink-club-viewer' ) ] );
+        }
+
+        // Deduplicate: same teamcode can appear multiple times (one row per pool)
+        $seen  = [];
+        $teams = [];
+        foreach ( $body as $team ) {
+            $code = (string) ( $team['teamcode'] ?? '' );
+            $name = (string) ( $team['teamnaam'] ?? '' );
+            if ( $code && ! isset( $seen[ $code ] ) ) {
+                $seen[ $code ] = true;
+                $teams[] = [ 'id' => $code, 'name' => $name ];
+            }
+        }
+
+        if ( empty( $teams ) ) {
+            wp_send_json_error( [ 'message' => __( 'Geen teams gevonden voor dit client ID.', 'sportlink-club-viewer' ) ] );
+        }
+
+        wp_send_json_success( [ 'teams' => $teams ] );
+    }
+
+    // ── Sportlink API: fetch competitions for a team ──────────────────────────
+
+    private static function fetch_competitions_sportlink_api() {
+        $client_id = sanitize_text_field( $_POST['client_id'] ?? '' ) ?: get_option( 'scv_client_id', '' );
+        $team_id   = sanitize_text_field( $_POST['team_id']   ?? '' ) ?: get_option( 'scv_standing_team_id', '' );
+
+        if ( empty( $client_id ) || empty( $team_id ) ) {
+            wp_send_json_error( [ 'message' => __( 'Geen team of client ID geconfigureerd.', 'sportlink-club-viewer' ) ] );
+        }
+
+        $url      = "https://data.sportlink.com/teampoulelijst?teamcode={$team_id}&lokaleteamcode=-1&client_id={$client_id}";
+        $response = wp_remote_get( $url, [ 'timeout' => 15 ] );
+
+        if ( is_wp_error( $response ) ) {
+            wp_send_json_error( [ 'message' => $response->get_error_message() ] );
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+        if ( ! is_array( $body ) ) {
+            wp_send_json_error( [ 'message' => __( 'Ongeldig API-antwoord.', 'sportlink-club-viewer' ) ] );
+        }
+
+        $competitions = [];
+        foreach ( $body as $pool ) {
+            $id   = (string) ( $pool['poulecode'] ?? '' );
+            $name = (string) ( $pool['teamnaam']  ?? '' );
+            if ( $id ) {
+                $competitions[] = [ 'id' => $id, 'name' => $name ];
+            }
+        }
+
+        if ( empty( $competitions ) ) {
+            wp_send_json_error( [ 'message' => __( 'Geen competities gevonden voor dit team.', 'sportlink-club-viewer' ) ] );
+        }
+
+        wp_send_json_success( [ 'competitions' => $competitions ] );
+    }
+
     // ── Fetch competitions for a team (step 4) ────────────────────────────────
 
     public static function fetch_competitions() {
@@ -282,6 +369,13 @@ class SCV_Ajax {
 
         if ( ! current_user_can( 'manage_options' ) ) {
             wp_send_json_error( [ 'message' => __( 'Geen toegang.', 'sportlink-club-viewer' ) ], 403 );
+        }
+
+        $connection_type = sanitize_text_field( $_POST['connection_type'] ?? '' ) ?: get_option( 'scv_connection_type', '' );
+
+        if ( $connection_type === 'Sportlink API' ) {
+            self::fetch_competitions_sportlink_api();
+            return;
         }
 
         $team_id         = sanitize_text_field( $_POST['team_id']         ?? '' ) ?: get_option( 'scv_standing_team_id', '' );

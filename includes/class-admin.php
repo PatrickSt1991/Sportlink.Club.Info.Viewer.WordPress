@@ -418,7 +418,11 @@ class SCV_Admin {
             $standing_team_name = get_option( 'scv_standing_team_name', '' );
             $standing_pool_id   = get_option( 'scv_standing_pool_id', '' );
             $standing_pool_name = get_option( 'scv_standing_pool_name', '' );
-            $is_proxy           = get_option( 'scv_connection_type', '' ) === 'Sportlink Proxy';
+            $conn               = get_option( 'scv_connection_type', '' );
+            $is_proxy           = $conn === 'Sportlink Proxy';
+            $is_api             = $conn === 'Sportlink API';
+            $show_team_row      = ( $is_proxy && ! empty( $club_id ) ) || ( $is_api && ! empty( $client_id ) );
+            $show_comp_row      = $show_team_row && ! empty( $standing_team_id );
             ?>
             <div class="scv-section">
                 <h2><?php esc_html_e( 'Team standen', 'sportlink-club-viewer' ); ?></h2>
@@ -435,7 +439,7 @@ class SCV_Admin {
                         </td>
                     </tr>
 
-                    <tr id="scv-standings-team-row" <?php echo ( ! $is_proxy || empty( $club_id ) ) ? 'style="display:none;"' : ''; ?>>
+                    <tr id="scv-standings-team-row" <?php echo $show_team_row ? '' : 'style="display:none;"'; ?>>
                         <th scope="row"><?php esc_html_e( 'Team', 'sportlink-club-viewer' ); ?></th>
                         <td>
                             <button type="button" id="scv-fetch-teams" class="button button-secondary">
@@ -458,7 +462,7 @@ class SCV_Admin {
                         </td>
                     </tr>
 
-                    <tr id="scv-standings-comp-row" <?php echo ( empty( $standing_team_id ) || ! $is_proxy ) ? 'style="display:none;"' : ''; ?>>
+                    <tr id="scv-standings-comp-row" <?php echo $show_comp_row ? '' : 'style="display:none;"'; ?>>
                         <th scope="row"><?php esc_html_e( 'Competitie', 'sportlink-club-viewer' ); ?></th>
                         <td>
                             <button type="button" id="scv-fetch-competitions" class="button button-secondary">
@@ -481,10 +485,10 @@ class SCV_Admin {
                         </td>
                     </tr>
 
-                    <tr id="scv-standings-no-proxy" <?php echo $is_proxy ? 'style="display:none;"' : ''; ?>>
+                    <tr id="scv-standings-no-proxy" <?php echo ( $is_proxy || $is_api ) ? 'style="display:none;"' : ''; ?>>
                         <th></th>
                         <td>
-                            <p class="description"><?php esc_html_e( 'Team standen zijn alleen beschikbaar bij verbindingstype Sportlink Proxy.', 'sportlink-club-viewer' ); ?></p>
+                            <p class="description"><?php esc_html_e( 'Team standen zijn alleen beschikbaar bij verbindingstype Sportlink API of Sportlink Proxy.', 'sportlink-club-viewer' ); ?></p>
                         </td>
                     </tr>
 
