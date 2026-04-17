@@ -1,6 +1,5 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
-import 'whatwg-fetch';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { applyPersistentBackground } from '@/utils/background';
@@ -23,67 +22,67 @@ const mountTargets = [
   { id: 'scv-prematch-display', appType: 'prematch-display' },
 ];
 
-// Read config from the <script type="application/json" id="scv-config-..."> element
-// that the shortcode embeds directly in the page HTML.  This is the same pattern
-// WordPress uses for block-editor and emoji data — it is always present regardless
-// of script-loading hook order.
-//
-// Fall back to window.scvConfig in case wp_localize_script happened to work.
-( function initConfig() {
-  for ( const { id } of mountTargets ) {
-    const configId = id.replace( 'scv-', 'scv-config-' ); // scv-match-display → scv-config-match-display
-    const cfgEl    = document.getElementById( configId );
+function initialize() {
+  // Read config from <script type="application/json" id="scv-config-..."> embedded by shortcode.
+  // Falls back to window.scvConfig (wp_localize_script) if no JSON element is found.
+  ( function initConfig() {
+    for ( const { id } of mountTargets ) {
+      const configId = id.replace( 'scv-', 'scv-config-' );
+      const cfgEl    = document.getElementById( configId );
 
-    if ( cfgEl ) {
-      try {
-        const wpCfg = JSON.parse( cfgEl.textContent );
-        // Expose on window so stores that read window.scvConfig directly (e.g. sponsorStore)
-        // continue to work.
-        window.scvConfig = wpCfg;
-        initConfigFromWP( wpCfg );
+      if ( cfgEl ) {
+        try {
+          const wpCfg = JSON.parse( cfgEl.textContent );
+          window.scvConfig = wpCfg;
+          initConfigFromWP( wpCfg );
 
-        if ( wpCfg.debug ) {
-          console.group( '[Sportlink Viewer] startup — config van JSON-element' );
-          console.log( 'element-id:', configId );
-          console.log( 'config:', wpCfg );
-          console.groupEnd();
+          if ( wpCfg.debug ) {
+            console.group( '[Sportlink Viewer] startup — config van JSON-element' );
+            console.log( 'element-id:', configId );
+            console.log( 'config:', wpCfg );
+            console.groupEnd();
+          }
+          return;
+        } catch ( e ) {
+          console.warn( '[Sportlink Viewer] Config parse error in #' + configId + ':', e );
         }
-        return; // both shortcodes share the same WP options; one pass is enough
-      } catch ( e ) {
-        console.warn( '[Sportlink Viewer] Config parse error in #' + configId + ':', e );
       }
     }
-  }
 
-  // If no JSON element found, try window.scvConfig (set by wp_localize_script if it worked)
-  if ( window.scvConfig ) {
-    initConfigFromWP( window.scvConfig );
-    if ( window.scvConfig.debug ) {
-      console.group( '[Sportlink Viewer] startup — config van window.scvConfig' );
-      console.log( 'config:', window.scvConfig );
-      console.groupEnd();
+    if ( window.scvConfig ) {
+      initConfigFromWP( window.scvConfig );
+      if ( window.scvConfig.debug ) {
+        console.group( '[Sportlink Viewer] startup — config van window.scvConfig' );
+        console.log( 'config:', window.scvConfig );
+        console.groupEnd();
+      }
+    } else {
+      console.warn( '[Sportlink Viewer] Geen config gevonden — plugin niet geconfigureerd?' );
     }
-  } else {
-    console.warn( '[Sportlink Viewer] Geen config gevonden — plugin niet geconfigureerd?' );
+  } )();
+
+  const pinia = createPinia();
+  let backgroundApplied = false;
+
+  for ( const { id, appType } of mountTargets ) {
+    const el = document.getElementById( id );
+    if ( ! el ) continue;
+
+    if ( ! backgroundApplied ) {
+      applyPersistentBackground();
+      backgroundApplied = true;
+    }
+
+    const app = createApp( App );
+    app.use( pinia );
+    app.use( createAppRouter( appType ) );
+    app.use( Toast, toastOptions );
+    app.mount( el );
   }
-} )();
+}
 
-// Shared Pinia instance — both displays use the same club config
-const pinia = createPinia();
-let backgroundApplied = false;
-
-for ( const { id, appType } of mountTargets ) {
-  const el = document.getElementById( id );
-  if ( ! el ) continue;
-
-  if ( ! backgroundApplied ) {
-    applyPersistentBackground();
-    backgroundApplied = true;
-  }
-
-  const app = createApp( App );
-  app.use( pinia );
-  app.use( createAppRouter( appType ) );
-  app.use( Toast, toastOptions );
-  app.mount( el );
+if ( document.readyState === 'loading' ) {
+  document.addEventListener( 'DOMContentLoaded', initialize );
+} else {
+  initialize();
 }
