@@ -53,7 +53,7 @@ jobs:
       - name: Create plugin zip
         run: |
           VERSION="${{ steps.version.outputs.tag }}"
-          PLUGIN_SLUG="sportlink-club-viewer"
+          PLUGIN_SLUG="Sportlink-Club-Viewer-Wordpress"
           ZIP_NAME="${PLUGIN_SLUG}-${VERSION}.zip"
 
           # Assemble only the files WordPress needs — no Vue source, no dev files
