@@ -3,7 +3,7 @@
  * Plugin Name:       Sportlink Club Viewer
  * Plugin URI:        https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer
  * Description:       Toon wedstrijdprogramma, uitslagen en voorwedstrijdinformatie van Sportlink/Nevobo op je WordPress-site via shortcodes.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Author:            Patrick Stel
  * Author URI:        https://github.com/PatrickSt1991
  * License:           MIT
@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SCV_VERSION',     '1.0.0' );
+define( 'SCV_VERSION',     '1.1.0' );
 define( 'SCV_PLUGIN_FILE', __FILE__ );
 define( 'SCV_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SCV_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
@@ -38,9 +38,10 @@ add_action( 'init', function () {
         ],
         'render_callback' => function ( $attrs ) {
             switch ( $attrs['displayType'] ?? 'match' ) {
-                case 'prematch':  return do_shortcode( '[sportlink_prematch_display]' );
-                case 'standings': return do_shortcode( '[sportlink_standing_display]' );
-                default:          return do_shortcode( '[sportlink_match_display]' );
+                case 'prematch':           return do_shortcode( '[sportlink_prematch_display]' );
+                case 'standings':          return do_shortcode( '[sportlink_standing_display]' );
+                case 'standings-overview': return do_shortcode( '[sportlink_standings_overview]' );
+                default:                   return do_shortcode( '[sportlink_match_display]' );
             }
         },
     ] );
@@ -78,6 +79,9 @@ register_activation_hook( __FILE__, function () {
         'scv_standing_team_name'  => '',
         'scv_standing_pool_id'    => '',
         'scv_standing_pool_name'  => '',
+        'scv_standings_list'      => [],
+        'scv_overview_columns'    => 'auto',
+        'scv_overview_full_width' => 1,
         'scv_own_team_colors'     => [ 'bg' => '#1a5c1a', 'text' => '#ffffff' ],
         'scv_connection_status'   => [ 'status' => 'unknown', 'time' => 0, 'message' => '' ],
         'scv_layout'   => [

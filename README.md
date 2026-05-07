@@ -6,6 +6,8 @@ Een WordPress-plugin die het [ClubInfoBoard](https://github.com/PatrickSt1991/Sp
 
 - Live wedstrijdschema en uitslagen via de Sportlink API, Sportlink Proxy of Nevobo (volleybal)
 - Voorwedstrijdinformatie: kleedkamerverdeling en veldindeling
+- Stand van één team (`[sportlink_standing_display]`)
+- Standen-overzicht: meerdere elftallen naast elkaar op één pagina (`[sportlink_standings_overview]`)
 - Automatisch wisselen tussen schema en uitslagen
 - Aanpasbaar kleurenschema (5 kolommen, achtergrond + tekst per kolom)
 - Sponsorafbeeldingenbalk (maximaal 13 afbeeldingen, uit de mediabibliotheek of via URL)
@@ -48,6 +50,28 @@ De instellingenpagina heeft drie tabbladen:
 | Achtergrondafbeelding | URL van de achtergrondafbeelding (kies uit de mediabibliotheek of voer direct in) |
 | Debug modus | Ruwe API-antwoorden naar de browserconsole loggen (F12) |
 
+#### Team standen (één team)
+
+Voor de shortcode `[sportlink_standing_display]`:
+
+| Instelling | Omschrijving |
+|---|---|
+| Standen weergeven | Schakelt de stand-functionaliteit aan/uit |
+| Team | Kies het team waarvan je de stand wilt tonen (klik eerst **Teams ophalen**) |
+| Competitie | Kies de competitie/poule waarin het team speelt |
+
+#### Standen overzicht (meerdere elftallen)
+
+Voor de shortcode `[sportlink_standings_overview]` — toont de standen van meerdere elftallen naast elkaar in een raster.
+
+| Instelling | Omschrijving |
+|---|---|
+| Aantal kolommen | Automatisch (responsief, zoveel mogelijk naast elkaar) of een vast aantal van 1–6 kolommen |
+| Volledige paginabreedte | Breekt uit het inhoudsgebied van het thema zodat het overzicht de volledige paginabreedte gebruikt (handig als je thema een smalle inhoudsbreedte heeft). Schakel uit als dit problemen geeft, bijv. bij een sidebar |
+| Elftallen | Repeatbare lijst — voeg per elftal een team + competitie toe via de twee dropdowns. Klik **+ Elftal toevoegen** voor extra rijen, of het prullenbakje om een rij te verwijderen |
+
+Teams die in meerdere competities spelen (bijv. beker én reguliere competitie) worden in de team-dropdown als één keuze getoond — bij het kiezen van een competitie zie je alle pools waarin dat team speelt.
+
 ### Stijl
 
 Kies achtergrond- en tekstkleuren voor elk van de vijf weergavekolommen via de WordPress-kleurkiezer. Een livevoorbeeld wordt bijgewerkt terwijl je kiest.
@@ -62,6 +86,8 @@ Voeg sponsorafbeeldingen toe vanuit de WordPress-mediabibliotheek of via een dir
 |---|---|
 | `[sportlink_match_display]` | Wedstrijdschema voor de komende *n* dagen; schakelt automatisch over naar uitslagen na 2 scrollcycli (indien ingeschakeld) |
 | `[sportlink_prematch_display]` | Voorwedstrijdinformatie (kleedkamers + veld) voor wedstrijden die binnen de komende 3 uur beginnen |
+| `[sportlink_standing_display]` | Stand van één team in zijn competitie/poule (configureer onder **Team standen**) |
+| `[sportlink_standings_overview]` | Standen van meerdere elftallen naast elkaar in een raster, voor een overzichtspagina (configureer onder **Standen overzicht**) |
 
 **Tip:** gebruik een paginasjabloon op volledige breedte of zonder kop- en voettekst voor een strak weergaveschermformaat.
 

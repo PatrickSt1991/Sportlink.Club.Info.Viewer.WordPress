@@ -110,7 +110,9 @@ const ptsStyle  = computed(() => ({
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function isOwnTeam(team) {
-  return team.LocalTeam === true || team.PublicTeamId === config.value.standingTeamId;
+  if (team.LocalTeam === true) return true;
+  const ids = String(config.value.standingTeamId || '').split(',').map(s => s.trim()).filter(Boolean);
+  return ids.includes(String(team.PublicTeamId));
 }
 
 function rowStyle(base, team) {

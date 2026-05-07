@@ -14,22 +14,27 @@ class SCV_Assets {
      * Shortcodes will enqueue on demand.
      */
     public static function register_frontend() {
-        $js  = SCV_PLUGIN_URL . 'assets/dist/sportlink-viewer.js';
-        $css = SCV_PLUGIN_URL . 'assets/dist/sportlink-viewer.css';
+        $js_path  = SCV_PLUGIN_DIR . 'assets/dist/sportlink-viewer.js';
+        $css_path = SCV_PLUGIN_DIR . 'assets/dist/sportlink-viewer.css';
+        $js_url   = SCV_PLUGIN_URL . 'assets/dist/sportlink-viewer.js';
+        $css_url  = SCV_PLUGIN_URL . 'assets/dist/sportlink-viewer.css';
+
+        $js_ver  = file_exists( $js_path )  ? (string) filemtime( $js_path )  : SCV_VERSION;
+        $css_ver = file_exists( $css_path ) ? (string) filemtime( $css_path ) : SCV_VERSION;
 
         wp_register_script(
             'scv-viewer',
-            $js,
+            $js_url,
             [],
-            SCV_VERSION,
+            $js_ver,
             true   // footer
         );
 
         wp_register_style(
             'scv-viewer',
-            $css,
+            $css_url,
             [],
-            SCV_VERSION
+            $css_ver
         );
     }
 
@@ -46,19 +51,24 @@ class SCV_Assets {
         wp_enqueue_script( 'wp-color-picker' );
         wp_enqueue_media();
 
-        // Plugin admin assets
+        // Plugin admin assets — use filemtime so browser caches bust on every change
+        $admin_css_path = SCV_PLUGIN_DIR . 'admin/css/admin.css';
+        $admin_js_path  = SCV_PLUGIN_DIR . 'admin/js/admin.js';
+        $admin_css_ver  = file_exists( $admin_css_path ) ? (string) filemtime( $admin_css_path ) : SCV_VERSION;
+        $admin_js_ver   = file_exists( $admin_js_path )  ? (string) filemtime( $admin_js_path )  : SCV_VERSION;
+
         wp_enqueue_style(
             'scv-admin',
             SCV_PLUGIN_URL . 'admin/css/admin.css',
             [],
-            SCV_VERSION
+            $admin_css_ver
         );
 
         wp_enqueue_script(
             'scv-admin',
             SCV_PLUGIN_URL . 'admin/js/admin.js',
             [ 'jquery', 'wp-color-picker' ],
-            SCV_VERSION,
+            $admin_js_ver,
             true
         );
 

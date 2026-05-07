@@ -55,6 +55,15 @@ class SCV_Admin {
         register_setting( 'scv_general', 'scv_standing_pool_id',  [ 'sanitize_callback' => 'sanitize_text_field' ] );
         register_setting( 'scv_general', 'scv_standing_pool_name',[ 'sanitize_callback' => 'sanitize_text_field' ] );
 
+        // Multi-team standings overview list (new feature, separate from single-team config above)
+        register_setting( 'scv_general', 'scv_standings_list', [
+            'sanitize_callback' => [ __CLASS__, 'sanitize_standings_list' ],
+        ] );
+        register_setting( 'scv_general', 'scv_overview_columns', [
+            'sanitize_callback' => [ __CLASS__, 'sanitize_overview_columns' ],
+        ] );
+        register_setting( 'scv_general', 'scv_overview_full_width', [ 'sanitize_callback' => 'absint' ] );
+
         // Password stored separately (no esc_url processing)
         register_setting( 'scv_general', 'scv_password', [
             'sanitize_callback' => function( $val ) {
@@ -120,6 +129,29 @@ class SCV_Admin {
         $clean = [];
         foreach ( $keys as $k ) {
             $clean[ $k ] = isset( $input[ $k ] ) ? 1 : 0;
+        }
+        return $clean;
+    }
+
+    public static function sanitize_overview_columns( $val ) {
+        $val = (string) $val;
+        return in_array( $val, [ 'auto', '1', '2', '3', '4', '5', '6' ], true ) ? $val : 'auto';
+    }
+
+    public static function sanitize_standings_list( $input ) {
+        if ( ! is_array( $input ) ) return [];
+        $clean = [];
+        foreach ( $input as $row ) {
+            if ( ! is_array( $row ) ) continue;
+            $team_id = sanitize_text_field( $row['teamId'] ?? '' );
+            $pool_id = sanitize_text_field( $row['poolId'] ?? '' );
+            if ( $team_id === '' || $pool_id === '' ) continue;
+            $clean[] = [
+                'teamId'   => $team_id,
+                'teamName' => sanitize_text_field( $row['teamName'] ?? '' ),
+                'poolId'   => $pool_id,
+                'poolName' => sanitize_text_field( $row['poolName'] ?? '' ),
+            ];
         }
         return $clean;
     }
@@ -190,6 +222,9 @@ class SCV_Admin {
                     <li><code>[sportlink_standing_display]</code>
                         <button type="button" class="button button-small scv-copy-shortcode" data-shortcode="[sportlink_standing_display]"><?php esc_html_e( 'Kopieer', 'sportlink-club-viewer' ); ?></button>
                         — <?php esc_html_e( 'Stand van het geconfigureerde team', 'sportlink-club-viewer' ); ?></li>
+                    <li><code>[sportlink_standings_overview]</code>
+                        <button type="button" class="button button-small scv-copy-shortcode" data-shortcode="[sportlink_standings_overview]"><?php esc_html_e( 'Kopieer', 'sportlink-club-viewer' ); ?></button>
+                        — <?php esc_html_e( 'Standen van meerdere elftallen naast elkaar', 'sportlink-club-viewer' ); ?></li>
                 </ul>
                 <p class="description"><?php esc_html_e( 'Tip: gebruik een paginasjabloon zonder kop/voettekst voor het beste weergaveresultaat op een scherm.', 'sportlink-club-viewer' ); ?></p>
             </div>
@@ -258,7 +293,7 @@ class SCV_Admin {
                     </tr>
 
                     <!-- Sportlink API fields -->
-                    <tr class="scv-field-sportlink-api scv-field-sportlink-proxy scv-field-hide">
+                    <tr class="scv-field-sportlink-api scv-field-hide">
                         <th scope="row"><label for="scv_client_id"><?php esc_html_e( 'Client ID', 'sportlink-club-viewer' ); ?></label></th>
                         <td>
                             <input type="text" name="scv_client_id" id="scv_client_id"
@@ -295,6 +330,36 @@ class SCV_Admin {
                         </td>
                     </tr>
 
+                    <!-- Test / clear connection -->
+                    <tr>
+                        <th scope="row"><?php esc_html_e( 'Verbinding testen', 'sportlink-club-viewer' ); ?></th>
+                        <td>
+                            <button type="button" id="scv-test-connection" class="button button-secondary">
+                                <?php esc_html_e( 'Test verbinding', 'sportlink-club-viewer' ); ?>
+                            </button>
+                            <button type="button" id="scv-clear-connection" class="button button-secondary" style="margin-left:8px;">
+                                <?php esc_html_e( 'Velden wissen', 'sportlink-club-viewer' ); ?>
+                            </button>
+                            <span id="scv-test-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
+                            <p class="description" id="scv-test-status"></p>
+                        </td>
+                    </tr>
+
+                    <!-- Sportlink API: location auto-filled -->
+                    <tr class="scv-field-sportlink-api scv-field-hide">
+                        <th scope="row"><label for="scv_sport_locatie_api"><?php esc_html_e( 'Locatienaam', 'sportlink-club-viewer' ); ?></label></th>
+                        <td>
+                            <input type="text" id="scv_sport_locatie_api" class="regular-text"
+                                   value="<?php echo esc_attr( $sport_locatie ); ?>" readonly>
+                            <input type="hidden" name="scv_sport_locatie" id="scv_sport_locatie" value="<?php echo esc_attr( $sport_locatie ); ?>">
+                            <button type="button" id="scv-verify-client" class="button button-secondary" style="margin-left:8px;">
+                                <?php esc_html_e( 'Verifiëren', 'sportlink-club-viewer' ); ?>
+                            </button>
+                            <span id="scv-verify-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
+                            <p class="description" id="scv-verify-status"></p>
+                        </td>
+                    </tr>
+
                     <!-- Club fetch (Proxy types) -->
                     <tr class="scv-field-sportlink-proxy scv-field-nevobo scv-field-hide">
                         <th scope="row"><?php esc_html_e( 'Club ophalen', 'sportlink-club-viewer' ); ?></th>
@@ -314,36 +379,6 @@ class SCV_Admin {
                                     <?php endif; ?>
                                 </select>
                             </div>
-                        </td>
-                    </tr>
-
-                    <!-- Sportlink API: location auto-filled -->
-                    <tr class="scv-field-sportlink-api scv-field-hide">
-                        <th scope="row"><label for="scv_sport_locatie_api"><?php esc_html_e( 'Locatienaam', 'sportlink-club-viewer' ); ?></label></th>
-                        <td>
-                            <input type="text" id="scv_sport_locatie_api" class="regular-text"
-                                   value="<?php echo esc_attr( $sport_locatie ); ?>" readonly>
-                            <input type="hidden" name="scv_sport_locatie" id="scv_sport_locatie" value="<?php echo esc_attr( $sport_locatie ); ?>">
-                            <button type="button" id="scv-verify-client" class="button button-secondary" style="margin-left:8px;">
-                                <?php esc_html_e( 'Verifiëren', 'sportlink-club-viewer' ); ?>
-                            </button>
-                            <span id="scv-verify-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
-                            <p class="description" id="scv-verify-status"></p>
-                        </td>
-                    </tr>
-
-                    <!-- Test / clear connection -->
-                    <tr>
-                        <th scope="row"><?php esc_html_e( 'Verbinding testen', 'sportlink-club-viewer' ); ?></th>
-                        <td>
-                            <button type="button" id="scv-test-connection" class="button button-secondary">
-                                <?php esc_html_e( 'Test verbinding', 'sportlink-club-viewer' ); ?>
-                            </button>
-                            <button type="button" id="scv-clear-connection" class="button button-secondary" style="margin-left:8px;">
-                                <?php esc_html_e( 'Velden wissen', 'sportlink-club-viewer' ); ?>
-                            </button>
-                            <span id="scv-test-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
-                            <p class="description" id="scv-test-status"></p>
                         </td>
                     </tr>
 
@@ -446,7 +481,7 @@ class SCV_Admin {
                 </table>
             </div>
 
-            <!-- Standings settings -->
+            <!-- Standings settings (single team) -->
             <?php
             $enable_standings   = get_option( 'scv_enable_standings', 0 );
             $standing_team_id   = get_option( 'scv_standing_team_id', '' );
@@ -531,8 +566,145 @@ class SCV_Admin {
                 <p class="description"><?php esc_html_e( 'Gebruik shortcode [sportlink_standing_display] om de stand op een pagina te tonen.', 'sportlink-club-viewer' ); ?></p>
             </div>
 
+            <!-- Standings overview (multiple teams side-by-side) -->
+            <?php
+            $standings_list   = (array) get_option( 'scv_standings_list', [] );
+            $overview_columns    = get_option( 'scv_overview_columns', 'auto' );
+            $overview_full_width = get_option( 'scv_overview_full_width', 1 );
+            $can_fetch_ov        = ( $is_proxy && ! empty( $club_id ) ) || ( $is_api && ! empty( $client_id ) );
+            $col_options      = [
+                'auto' => __( 'Automatisch (zoveel mogelijk naast elkaar)', 'sportlink-club-viewer' ),
+                '1'    => __( '1 kolom (onder elkaar)', 'sportlink-club-viewer' ),
+                '2'    => __( '2 kolommen', 'sportlink-club-viewer' ),
+                '3'    => __( '3 kolommen', 'sportlink-club-viewer' ),
+                '4'    => __( '4 kolommen', 'sportlink-club-viewer' ),
+                '5'    => __( '5 kolommen', 'sportlink-club-viewer' ),
+                '6'    => __( '6 kolommen', 'sportlink-club-viewer' ),
+            ];
+            ?>
+            <div class="scv-section">
+                <h2><?php esc_html_e( 'Standen overzicht (meerdere elftallen)', 'sportlink-club-viewer' ); ?></h2>
+                <p class="description"><?php esc_html_e( 'Maak een aparte pagina waar standen van meerdere elftallen naast elkaar worden getoond. Geconfigureerde elftallen hieronder worden gebruikt door de shortcode [sportlink_standings_overview].', 'sportlink-club-viewer' ); ?></p>
+
+                <div id="scv-overview-no-proxy" <?php echo ( $is_proxy || $is_api ) ? 'style="display:none;"' : ''; ?>>
+                    <p class="description"><?php esc_html_e( 'Standen overzicht is alleen beschikbaar bij verbindingstype Sportlink API of Sportlink Proxy.', 'sportlink-club-viewer' ); ?></p>
+                </div>
+
+                <div id="scv-overview-config" <?php echo $can_fetch_ov ? '' : 'style="display:none;"'; ?>>
+                    <table class="form-table" role="presentation">
+                        <tr>
+                            <th scope="row"><label for="scv_overview_columns"><?php esc_html_e( 'Aantal kolommen', 'sportlink-club-viewer' ); ?></label></th>
+                            <td>
+                                <select name="scv_overview_columns" id="scv_overview_columns">
+                                    <?php foreach ( $col_options as $val => $label ) : ?>
+                                        <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $overview_columns, $val ); ?>>
+                                            <?php echo esc_html( $label ); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p class="description"><?php esc_html_e( 'Hoe de standen-boxen op de pagina worden geschikt. Automatisch past zich aan aan de breedte van het paginaveld.', 'sportlink-club-viewer' ); ?></p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th scope="row"><?php esc_html_e( 'Volledige paginabreedte', 'sportlink-club-viewer' ); ?></th>
+                            <td>
+                                <label>
+                                    <input type="checkbox" name="scv_overview_full_width" value="1"
+                                        <?php checked( 1, $overview_full_width ); ?>>
+                                    <?php esc_html_e( 'Breek uit het inhoudsgebied van het thema (gebruik de hele paginabreedte)', 'sportlink-club-viewer' ); ?>
+                                </label>
+                                <p class="description"><?php esc_html_e( 'WordPress-thema\'s beperken meestal de breedte van de inhoud. Schakel dit in om de standen-overzichtspagina de volledige breedte van het scherm te laten gebruiken. Schakel uit als dit problemen geeft met je thema (bijv. als je een sidebar hebt).', 'sportlink-club-viewer' ); ?></p>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <p>
+                        <button type="button" id="scv-overview-fetch-teams" class="button button-secondary">
+                            <?php esc_html_e( 'Teams ophalen', 'sportlink-club-viewer' ); ?>
+                        </button>
+                        <span id="scv-overview-fetch-teams-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
+                        <span id="scv-overview-fetch-teams-status" class="description" style="margin-left:8px;"></span>
+                    </p>
+
+                    <div id="scv-overview-rows">
+                        <?php
+                        $rows_to_render = ! empty( $standings_list )
+                            ? $standings_list
+                            : [ [ 'teamId' => '', 'teamName' => '', 'poolId' => '', 'poolName' => '' ] ];
+                        foreach ( $rows_to_render as $i => $row ) {
+                            self::render_standings_row( $i, $row );
+                        }
+                        ?>
+                    </div>
+
+                    <p style="margin-top:8px;">
+                        <button type="button" id="scv-overview-add-row" class="button button-secondary">
+                            <?php esc_html_e( '+ Elftal toevoegen', 'sportlink-club-viewer' ); ?>
+                        </button>
+                    </p>
+                </div>
+
+                <script type="text/html" id="scv-overview-row-template">
+                    <?php self::render_standings_row( '__INDEX__', [ 'teamId' => '', 'teamName' => '', 'poolId' => '', 'poolName' => '' ] ); ?>
+                </script>
+            </div>
+
             <?php submit_button( __( 'Instellingen opslaan', 'sportlink-club-viewer' ) ); ?>
         </form>
+        <?php
+    }
+
+    /**
+     * Render one row of the standings list (team + competition select).
+     * Used both for initial render and as a template in a <script> block
+     * (with __INDEX__ placeholder) so JS can clone new rows.
+     */
+    private static function render_standings_row( $i, array $row ) {
+        $team_id   = $row['teamId']   ?? '';
+        $team_name = $row['teamName'] ?? '';
+        $pool_id   = $row['poolId']   ?? '';
+        $pool_name = $row['poolName'] ?? '';
+        $name_base = "scv_standings_list[{$i}]";
+        ?>
+        <div class="scv-standings-row" data-index="<?php echo esc_attr( $i ); ?>">
+            <div class="scv-standings-row-fields">
+                <label class="scv-standings-row-field">
+                    <span><?php esc_html_e( 'Team', 'sportlink-club-viewer' ); ?></span>
+                    <select name="<?php echo esc_attr( $name_base ); ?>[teamId]" class="scv-standings-team-select">
+                        <option value=""><?php esc_html_e( '— Kies een team —', 'sportlink-club-viewer' ); ?></option>
+                        <?php if ( $team_id ) : ?>
+                            <option value="<?php echo esc_attr( $team_id ); ?>" selected>
+                                <?php echo esc_html( $team_name ?: $team_id ); ?>
+                            </option>
+                        <?php endif; ?>
+                    </select>
+                    <input type="hidden" name="<?php echo esc_attr( $name_base ); ?>[teamName]"
+                           class="scv-standings-team-name" value="<?php echo esc_attr( $team_name ); ?>">
+                </label>
+
+                <label class="scv-standings-row-field">
+                    <span><?php esc_html_e( 'Competitie', 'sportlink-club-viewer' ); ?></span>
+                    <select name="<?php echo esc_attr( $name_base ); ?>[poolId]" class="scv-standings-pool-select"
+                            <?php echo $team_id ? '' : 'disabled'; ?>>
+                        <option value=""><?php esc_html_e( '— Kies eerst een team —', 'sportlink-club-viewer' ); ?></option>
+                        <?php if ( $pool_id ) : ?>
+                            <option value="<?php echo esc_attr( $pool_id ); ?>" selected>
+                                <?php echo esc_html( $pool_name ?: $pool_id ); ?>
+                            </option>
+                        <?php endif; ?>
+                    </select>
+                    <input type="hidden" name="<?php echo esc_attr( $name_base ); ?>[poolName]"
+                           class="scv-standings-pool-name" value="<?php echo esc_attr( $pool_name ); ?>">
+                    <span class="spinner scv-standings-pool-spinner" style="float:none;margin:0;display:none;"></span>
+                </label>
+            </div>
+
+            <button type="button" class="button-link-delete scv-standings-row-remove"
+                    title="<?php esc_attr_e( 'Verwijder dit elftal', 'sportlink-club-viewer' ); ?>">
+                <span class="dashicons dashicons-trash"></span>
+                <?php esc_html_e( 'Verwijder', 'sportlink-club-viewer' ); ?>
+            </button>
+        </div>
         <?php
     }
 
@@ -770,6 +942,28 @@ class SCV_Admin {
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Return the standings list as a clean array of {teamId, teamName, poolId, poolName}.
+     * Filters out incomplete rows (missing teamId or poolId).
+     */
+    public static function get_standings_list(): array {
+        $list = (array) get_option( 'scv_standings_list', [] );
+        $clean = [];
+        foreach ( $list as $row ) {
+            if ( ! is_array( $row ) ) continue;
+            $team_id = (string) ( $row['teamId'] ?? '' );
+            $pool_id = (string) ( $row['poolId'] ?? '' );
+            if ( $team_id === '' || $pool_id === '' ) continue;
+            $clean[] = [
+                'teamId'   => $team_id,
+                'teamName' => (string) ( $row['teamName'] ?? '' ),
+                'poolId'   => $pool_id,
+                'poolName' => (string) ( $row['poolName'] ?? '' ),
+            ];
+        }
+        return $clean;
+    }
+
     public static function get_game_types() {
         return [
             [ 'label' => 'Voetbal',         'types' => [ 'Sportlink API', 'Sportlink Proxy' ] ],
@@ -839,10 +1033,14 @@ class SCV_Admin {
             // Own team highlight
             'ownTeamBg'        => $ot['bg'],
             'ownTeamText'      => $ot['text'],
-            // Standings
+            // Standings — single team (used by [sportlink_standing_display])
             'enableStandings'  => (bool) get_option( 'scv_enable_standings', 0 ),
             'standingTeamId'   => get_option( 'scv_standing_team_id', '' ),
             'standingPoolId'   => get_option( 'scv_standing_pool_id', '' ),
+            // Standings overview — multiple teams (used by [sportlink_standings_overview])
+            'standingsList'    => self::get_standings_list(),
+            'overviewColumns'   => get_option( 'scv_overview_columns', 'auto' ),
+            'overviewFullWidth' => (bool) get_option( 'scv_overview_full_width', 1 ),
             'standingColumns'  => [
                 'totalMatches' => (bool) $sc['totalMatches'],
                 'won'          => (bool) $sc['won'],

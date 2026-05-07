@@ -18,9 +18,10 @@ const toastOptions = {
 };
 
 const mountTargets = [
-  { id: 'scv-match-display',    appType: 'match-display'    },
-  { id: 'scv-prematch-display', appType: 'prematch-display' },
-  { id: 'scv-standing-display', appType: 'standing-display' },
+  { id: 'scv-match-display',       appType: 'match-display'       },
+  { id: 'scv-prematch-display',    appType: 'prematch-display'    },
+  { id: 'scv-standing-display',    appType: 'standing-display'    },
+  { id: 'scv-standings-overview', appType: 'standings-overview' },
 ];
 
 function initialize() {

@@ -24,6 +24,8 @@
         $( '#scv-standings-team-row' ).toggle( canFetch );
         $( '#scv-standings-comp-row' ).toggle( canFetch && hasTeam );
         $( '#scv-standings-no-proxy' ).toggle( ! isProxy && ! isApi );
+        $( '#scv-overview-config' ).toggle( canFetch );
+        $( '#scv-overview-no-proxy' ).toggle( ! isProxy && ! isApi );
     }
 
     function updateFieldVisibility() {
@@ -202,7 +204,7 @@
         } );
     }
 
-    // ── Fetch teams for standings ─────────────────────────────────────────────
+    // ── Single-team standings (original) ──────────────────────────────────────
 
     $( '#scv-fetch-teams' ).on( 'click', function () {
         const $btn     = $( this );
@@ -224,6 +226,7 @@
                 club_id:         $( '#scv_club_id' ).val(),
                 game_type_label: $( '#scv_game_type_label' ).val(),
                 username:        $( '#scv_username' ).val(),
+                password:        $( '#scv_password' ).val(),
             },
         } )
         .done( function ( response ) {
@@ -264,8 +267,6 @@
         } );
     }
 
-    // ── Fetch competitions for standings team ─────────────────────────────────
-
     $( '#scv-fetch-competitions' ).on( 'click', function () {
         const $btn     = $( this );
         const $spinner = $( '#scv-fetch-comp-spinner' );
@@ -286,6 +287,7 @@
                 team_id:         $( '#scv_standing_team_id' ).val(),
                 game_type_label: $( '#scv_game_type_label' ).val(),
                 username:        $( '#scv_username' ).val(),
+                password:        $( '#scv_password' ).val(),
             },
         } )
         .done( function ( response ) {
@@ -325,6 +327,185 @@
             }
         } );
     }
+
+    // ── Standings overview (multi-team) — repeatable rows ─────────────────────
+    //
+    // One "Teams ophalen" button populates every row's team <select>. Selecting
+    // a team in a row auto-fetches that team's competitions and fills the row's
+    // competition <select>.
+
+    let scvOverviewTeams = [];
+
+    function populateOverviewRowTeamSelect( $row, teams, preserveSelection ) {
+        const $select = $row.find( '.scv-standings-team-select' );
+        const current = preserveSelection ? $select.val() : '';
+
+        $select.empty().append( '<option value="">— Kies een team —</option>' );
+        teams.forEach( function ( team ) {
+            $select.append( $( '<option>', { value: team.id, text: team.name } ) );
+        } );
+
+        if ( current && teams.some( t => t.id === current ) ) $select.val( current );
+    }
+
+    $( '#scv-overview-fetch-teams' ).on( 'click', function () {
+        const $btn     = $( this );
+        const $spinner = $( '#scv-overview-fetch-teams-spinner' );
+        const $status  = $( '#scv-overview-fetch-teams-status' );
+
+        $btn.prop( 'disabled', true );
+        $spinner.show();
+        $status.text( 'Teams ophalen…' ).removeClass( 'scv-error scv-success' );
+
+        $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data:   {
+                action:          'scv_fetch_teams',
+                nonce:           scvAdmin.nonce,
+                connection_type: $( '#scv_connection_type' ).val(),
+                client_id:       $( '#scv_client_id' ).val(),
+                club_id:         $( '#scv_club_id' ).val(),
+                game_type_label: $( '#scv_game_type_label' ).val(),
+                username:        $( '#scv_username' ).val(),
+                password:        $( '#scv_password' ).val(),
+            },
+        } )
+        .done( function ( response ) {
+            if ( response.success && response.data.teams && response.data.teams.length ) {
+                scvOverviewTeams = response.data.teams;
+                $( '#scv-overview-rows .scv-standings-row' ).each( function () {
+                    populateOverviewRowTeamSelect( $( this ), scvOverviewTeams, true );
+                } );
+                $status.text( scvOverviewTeams.length + ' teams gevonden.' ).addClass( 'scv-success' );
+            } else {
+                $status.text( response.data?.message || 'Geen teams gevonden.' ).addClass( 'scv-error' );
+            }
+        } )
+        .fail( function () {
+            $status.text( 'Verbindingsfout. Probeer opnieuw.' ).addClass( 'scv-error' );
+        } )
+        .always( function () {
+            $btn.prop( 'disabled', false );
+            $spinner.hide();
+        } );
+    } );
+
+    function fetchOverviewCompetitionsForRow( $row, teamId ) {
+        const $poolSelect = $row.find( '.scv-standings-pool-select' );
+        const $poolName   = $row.find( '.scv-standings-pool-name' );
+        const $spinner    = $row.find( '.scv-standings-pool-spinner' );
+
+        // Race-condition guard: stamp the row with the team-id this request is for.
+        // Responses that arrive after the user has changed the team are discarded.
+        $row.data( 'pendingTeamId', teamId );
+
+        // Cancel any in-flight previous request for this row so we don't
+        // accidentally double-render.
+        const prevXhr = $row.data( 'pendingXhr' );
+        if ( prevXhr && prevXhr.readyState !== 4 ) {
+            try { prevXhr.abort(); } catch ( e ) {}
+        }
+
+        $poolSelect.prop( 'disabled', true ).empty()
+            .append( '<option value="">Bezig met laden…</option>' );
+        $spinner.show();
+
+        const xhr = $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data:   {
+                action:          'scv_fetch_competitions',
+                nonce:           scvAdmin.nonce,
+                connection_type: $( '#scv_connection_type' ).val(),
+                client_id:       $( '#scv_client_id' ).val(),
+                team_id:         teamId,
+                game_type_label: $( '#scv_game_type_label' ).val(),
+                username:        $( '#scv_username' ).val(),
+                password:        $( '#scv_password' ).val(),
+            },
+        } );
+        $row.data( 'pendingXhr', xhr );
+
+        xhr.done( function ( response ) {
+            // Drop stale response if the user has changed the team since we sent this request.
+            if ( $row.data( 'pendingTeamId' ) !== teamId ) return;
+
+            $poolSelect.empty();
+            if ( response.success && response.data.competitions && response.data.competitions.length ) {
+                $poolSelect.append( '<option value="">— Kies een competitie —</option>' );
+                response.data.competitions.forEach( function ( comp ) {
+                    $poolSelect.append( $( '<option>', { value: comp.id, text: comp.name } ) );
+                } );
+                $poolSelect.prop( 'disabled', false );
+                $poolName.val( '' );
+            } else {
+                $poolSelect.append( '<option value="">— Geen competities gevonden —</option>' );
+                $poolSelect.prop( 'disabled', true );
+            }
+        } )
+        .fail( function ( jqXHR, textStatus ) {
+            if ( textStatus === 'abort' ) return;          // we aborted, ignore
+            if ( $row.data( 'pendingTeamId' ) !== teamId ) return;
+            $poolSelect.empty().append( '<option value="">— Fout bij ophalen —</option>' );
+        } )
+        .always( function () {
+            if ( $row.data( 'pendingTeamId' ) === teamId ) {
+                $spinner.hide();
+            }
+        } );
+    }
+
+    $( '#scv-overview-rows' ).on( 'change', '.scv-standings-team-select', function () {
+        const $row    = $( this ).closest( '.scv-standings-row' );
+        const teamId  = $( this ).val();
+        const teamTxt = $( this ).find( 'option:selected' ).text();
+        $row.find( '.scv-standings-team-name' ).val( teamId ? teamTxt : '' );
+
+        if ( ! teamId ) {
+            $row.find( '.scv-standings-pool-select' )
+                .prop( 'disabled', true ).empty()
+                .append( '<option value="">— Kies eerst een team —</option>' );
+            $row.find( '.scv-standings-pool-name' ).val( '' );
+            return;
+        }
+        fetchOverviewCompetitionsForRow( $row, teamId );
+    } );
+
+    $( '#scv-overview-rows' ).on( 'change', '.scv-standings-pool-select', function () {
+        const $row   = $( this ).closest( '.scv-standings-row' );
+        const poolId = $( this ).val();
+        const txt    = $( this ).find( 'option:selected' ).text();
+        $row.find( '.scv-standings-pool-name' ).val( poolId ? txt : '' );
+    } );
+
+    $( '#scv-overview-add-row' ).on( 'click', function () {
+        const $rows = $( '#scv-overview-rows' );
+        let maxIdx = -1;
+        $rows.find( '.scv-standings-row' ).each( function () {
+            const i = parseInt( $( this ).data( 'index' ), 10 );
+            if ( ! isNaN( i ) && i > maxIdx ) maxIdx = i;
+        } );
+        const newIdx = maxIdx + 1;
+
+        const tpl  = $( '#scv-overview-row-template' ).html();
+        const html = tpl.replace( /__INDEX__/g, newIdx );
+        const $newRow = $( html );
+        $rows.append( $newRow );
+
+        if ( scvOverviewTeams.length ) {
+            populateOverviewRowTeamSelect( $newRow, scvOverviewTeams, false );
+        }
+    } );
+
+    $( '#scv-overview-rows' ).on( 'click', '.scv-standings-row-remove', function () {
+        const $row = $( this ).closest( '.scv-standings-row' );
+        const xhr  = $row.data( 'pendingXhr' );
+        if ( xhr && xhr.readyState !== 4 ) {
+            try { xhr.abort(); } catch ( e ) {}
+        }
+        $row.remove();
+    } );
 
     // ── Verify Sportlink API client ───────────────────────────────────────────
 
@@ -532,6 +713,7 @@
                 client_id:       $( '#scv_client_id' ).val(),
                 game_type_label: $( '#scv_game_type_label' ).val(),
                 username:        $( '#scv_username' ).val(),
+                password:        $( '#scv_password' ).val(),
             },
         } )
         .done( function ( response ) {

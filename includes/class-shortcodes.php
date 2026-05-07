@@ -4,9 +4,10 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 class SCV_Shortcodes {
 
     public static function init() {
-        add_shortcode( 'sportlink_match_display',    [ __CLASS__, 'render_match_display' ] );
-        add_shortcode( 'sportlink_prematch_display', [ __CLASS__, 'render_prematch_display' ] );
-        add_shortcode( 'sportlink_standing_display', [ __CLASS__, 'render_standing_display' ] );
+        add_shortcode( 'sportlink_match_display',       [ __CLASS__, 'render_match_display' ] );
+        add_shortcode( 'sportlink_prematch_display',    [ __CLASS__, 'render_prematch_display' ] );
+        add_shortcode( 'sportlink_standing_display',    [ __CLASS__, 'render_standing_display' ] );
+        add_shortcode( 'sportlink_standings_overview', [ __CLASS__, 'render_standings_overview' ] );
     }
 
     /**
@@ -31,6 +32,14 @@ class SCV_Shortcodes {
      */
     public static function render_standing_display( $atts ) {
         return self::render( 'standing-display' );
+    }
+
+    /**
+     * [sportlink_standings_overview]
+     * Shows multiple league standings side-by-side, one per configured elftal.
+     */
+    public static function render_standings_overview( $atts ) {
+        return self::render( 'standings-overview' );
     }
 
     private static function render( string $app_type ): string {

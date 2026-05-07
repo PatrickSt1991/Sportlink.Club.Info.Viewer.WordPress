@@ -184,7 +184,11 @@ class SCV_Ajax {
         $club_id         = sanitize_text_field( $_POST['club_id']         ?? '' ) ?: get_option( 'scv_club_id', '' );
         $game_type_label = sanitize_text_field( $_POST['game_type_label'] ?? '' ) ?: get_option( 'scv_game_type_label', '' );
         $username        = sanitize_text_field( $_POST['username']        ?? '' ) ?: get_option( 'scv_username', '' );
-        $password        = get_option( 'scv_password', '' );
+        // Prefer password from POST (user just typed it but may not have saved yet);
+        // fall back to the stored option.
+        $password        = ( isset( $_POST['password'] ) && $_POST['password'] !== '' )
+            ? (string) wp_unslash( $_POST['password'] )
+            : get_option( 'scv_password', '' );
 
         if ( empty( $club_id ) ) {
             wp_send_json_error( [ 'message' => __( 'Geen club geselecteerd. Sla eerst de club-instellingen op.', 'sportlink-club-viewer' ) ] );
@@ -264,12 +268,29 @@ class SCV_Ajax {
         $items = $teams_body['Team'] ?? $teams_body['ClubTeam'] ?? null;
 
         if ( is_array( $items ) ) {
+            // Sportlink's ClubTeams returns one row per (team, competition), so
+            // a team that plays beker AND competitie shows up twice — usually
+            // with different PublicTeamIds. Dedupe by team NAME and merge all
+            // ids; downstream calls (fetch_competitions, standings highlight)
+            // accept a comma-separated id list.
+            $by_name = [];
             foreach ( $items as $team ) {
-                $id   = $team['PublicTeamId'] ?? $team['TeamId'] ?? '';
-                $name = $team['TeamName']     ?? $team['Name']   ?? '';
-                if ( $id && $name ) {
-                    $teams[] = [ 'id' => (string) $id, 'name' => (string) $name ];
+                $id   = (string) ( $team['PublicTeamId'] ?? $team['TeamId'] ?? '' );
+                $name = (string) ( $team['TeamName']     ?? $team['Name']   ?? '' );
+                if ( $id === '' || $name === '' ) continue;
+                $key = mb_strtolower( trim( $name ) );
+                if ( ! isset( $by_name[ $key ] ) ) {
+                    $by_name[ $key ] = [ 'name' => $name, 'ids' => [] ];
                 }
+                if ( ! in_array( $id, $by_name[ $key ]['ids'], true ) ) {
+                    $by_name[ $key ]['ids'][] = $id;
+                }
+            }
+            foreach ( $by_name as $entry ) {
+                $teams[] = [
+                    'id'   => implode( ',', $entry['ids'] ),
+                    'name' => $entry['name'],
+                ];
             }
         }
 
@@ -382,7 +403,11 @@ class SCV_Ajax {
         $team_id         = sanitize_text_field( $_POST['team_id']         ?? '' ) ?: get_option( 'scv_standing_team_id', '' );
         $game_type_label = sanitize_text_field( $_POST['game_type_label'] ?? '' ) ?: get_option( 'scv_game_type_label', '' );
         $username        = sanitize_text_field( $_POST['username']        ?? '' ) ?: get_option( 'scv_username', '' );
-        $password        = get_option( 'scv_password', '' );
+        // Prefer password from POST (user just typed it but may not have saved yet);
+        // fall back to the stored option.
+        $password        = ( isset( $_POST['password'] ) && $_POST['password'] !== '' )
+            ? (string) wp_unslash( $_POST['password'] )
+            : get_option( 'scv_password', '' );
 
         if ( empty( $team_id ) ) {
             wp_send_json_error( [ 'message' => __( 'Geen team geselecteerd.', 'sportlink-club-viewer' ) ] );
@@ -423,59 +448,64 @@ class SCV_Ajax {
             $cookie_header = implode( '; ', $pairs );
         }
 
-        // Fetch TeamCompetitionData via CORS proxy
+        // Fetch TeamCompetitionData via CORS proxy. The selected team may have
+        // multiple PublicTeamIds (one per competition it plays in) merged into
+        // a comma-separated list — query each id and merge the results,
+        // deduped by PoolId.
         $proxy_base = 'https://cors-proxy.clubinfoproxy.workers.dev/proxy?url=';
-        $comp_url   = $proxy_base . rawurlencode( "{$base_url}/entity/common/memberportal/app/team/TeamCompetitionData?v=2&PublicTeamId={$team_id}" );
-        $comp_args  = [
-            'timeout'    => 15,
-            'user-agent' => 'okhttp/4.12.0',
-            'headers'    => array_filter( [
-                'Authorization'     => "Bearer {$access_token}",
-                'X-Navajo-Instance' => $app_creds['instance'],
-                'X-Navajo-Locale'   => 'nl',
-                'X-Navajo-Version'  => '2',
-                'X-Real-User-Agent' => "sportlink-app-{$app_creds['userAgent']}/6.26.0-2025017636 android SM-N976N/samsung/25 (6.26.0)",
-                'Accept'            => '*/*',
-                'Cookie'            => $cookie_header ?: null,
-            ] ),
-        ];
-
-        $comp_response = wp_remote_get( $comp_url, $comp_args );
-
-        if ( is_wp_error( $comp_response ) ) {
-            wp_send_json_error( [ 'message' => $comp_response->get_error_message() ] );
-        }
-
-        $comp_body = json_decode( wp_remote_retrieve_body( $comp_response ), true );
-
-        if ( get_option( 'scv_debug_mode', 0 ) ) {
-            error_log( 'SCV fetch_competitions raw: ' . mb_substr( wp_remote_retrieve_body( $comp_response ), 0, 4000 ) );
-        }
-
-        // The array may live under different keys depending on sport/API version
-        $raw = $comp_body['TeamCompetition'] ?? $comp_body['Competition'] ?? $comp_body['Pool'] ?? ( is_array( $comp_body ) ? $comp_body : [] );
+        $team_ids   = array_filter( array_map( 'trim', explode( ',', $team_id ) ) );
 
         $competitions = [];
-        foreach ( (array) $raw as $entry ) {
-            $pool_id = $entry['PoolId'] ?? '';
-            $kind    = $entry['CompetitionKind'] ?? '';
-            $class   = $entry['ClassName'] ?? $entry['CompetitionClass'] ?? $entry['Class'] ?? '';
+        $seen_pools   = [];
 
-            if ( empty( $pool_id ) ) continue;
+        foreach ( $team_ids as $tid ) {
+            $comp_url  = $proxy_base . rawurlencode( "{$base_url}/entity/common/memberportal/app/team/TeamCompetitionData?v=2&PublicTeamId={$tid}" );
+            $comp_args = [
+                'timeout'    => 15,
+                'user-agent' => 'okhttp/4.12.0',
+                'headers'    => array_filter( [
+                    'Authorization'     => "Bearer {$access_token}",
+                    'X-Navajo-Instance' => $app_creds['instance'],
+                    'X-Navajo-Locale'   => 'nl',
+                    'X-Navajo-Version'  => '2',
+                    'X-Real-User-Agent' => "sportlink-app-{$app_creds['userAgent']}/6.26.0-2025017636 android SM-N976N/samsung/25 (6.26.0)",
+                    'Accept'            => '*/*',
+                    'Cookie'            => $cookie_header ?: null,
+                ] ),
+            ];
 
-            if ( $kind === 'DEFAULT_COMPETITION' ) {
-                $label = 'Competitie' . ( $class ? ' ' . $class : '' );
-            } else {
-                // TROPHY_COMPETITION or anything else: just use ClassName
-                $label = $class ?: 'Beker / Toernooi';
+            $comp_response = wp_remote_get( $comp_url, $comp_args );
+            if ( is_wp_error( $comp_response ) ) continue;
+
+            $comp_body = json_decode( wp_remote_retrieve_body( $comp_response ), true );
+
+            if ( get_option( 'scv_debug_mode', 0 ) ) {
+                error_log( 'SCV fetch_competitions raw (' . $tid . '): ' . mb_substr( wp_remote_retrieve_body( $comp_response ), 0, 4000 ) );
             }
 
-            $competitions[] = [
-                'id'    => (string) $pool_id,
-                'name'  => $label,
-                'kind'  => $kind,
-                'class' => $class,
-            ];
+            $raw = $comp_body['TeamCompetition'] ?? $comp_body['Competition'] ?? $comp_body['Pool'] ?? ( is_array( $comp_body ) ? $comp_body : [] );
+
+            foreach ( (array) $raw as $entry ) {
+                $pool_id = (string) ( $entry['PoolId'] ?? '' );
+                $kind    = (string) ( $entry['CompetitionKind'] ?? '' );
+                $class   = (string) ( $entry['ClassName'] ?? $entry['CompetitionClass'] ?? $entry['Class'] ?? '' );
+
+                if ( $pool_id === '' || isset( $seen_pools[ $pool_id ] ) ) continue;
+                $seen_pools[ $pool_id ] = true;
+
+                if ( $kind === 'DEFAULT_COMPETITION' ) {
+                    $label = 'Competitie' . ( $class ? ' ' . $class : '' );
+                } else {
+                    $label = $class ?: 'Beker / Toernooi';
+                }
+
+                $competitions[] = [
+                    'id'    => $pool_id,
+                    'name'  => $label,
+                    'kind'  => $kind,
+                    'class' => $class,
+                ];
+            }
         }
 
         if ( empty( $competitions ) ) {
@@ -569,7 +599,11 @@ class SCV_Ajax {
         $client_id       = sanitize_text_field( $_POST['client_id']       ?? '' ) ?: get_option( 'scv_client_id', '' );
         $game_type_label = sanitize_text_field( $_POST['game_type_label'] ?? '' ) ?: get_option( 'scv_game_type_label', '' );
         $username        = sanitize_text_field( $_POST['username']        ?? '' ) ?: get_option( 'scv_username', '' );
-        $password        = get_option( 'scv_password', '' );
+        // Prefer password from POST (user just typed it but may not have saved yet);
+        // fall back to the stored option.
+        $password        = ( isset( $_POST['password'] ) && $_POST['password'] !== '' )
+            ? (string) wp_unslash( $_POST['password'] )
+            : get_option( 'scv_password', '' );
 
         $status = [ 'status' => 'unknown', 'time' => time(), 'message' => '' ];
 
