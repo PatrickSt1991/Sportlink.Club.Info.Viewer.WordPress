@@ -1,5 +1,3 @@
-import 'core-js/stable';
-import 'regenerator-runtime/runtime';
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
 import { applyPersistentBackground } from '@/utils/background';

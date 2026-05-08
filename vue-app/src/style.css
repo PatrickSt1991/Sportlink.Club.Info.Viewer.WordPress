@@ -8,18 +8,6 @@
   --surface-dim:    rgba(255, 255, 255, 0.80);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --dur:  0.22s;
-  font-family: var(--font-sans);
-  line-height: 1.5;
-  font-weight: 400;
-  color: rgba(255, 255, 255, 0.92);
-  background-size: cover;
-  min-height: 100vh;
-  width: 100%;
-  overflow-x: hidden;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Reset (scoped to plugin wrapper) ───────────────────── */
@@ -35,6 +23,15 @@
   margin: 0 auto;
   text-align: center;
   overflow-x: hidden;
+  background-size: cover;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.92);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ─── Top bar ─────────────────────────────────────────────── */
