@@ -19,8 +19,8 @@
         <div v-if="cols.won"          :style="statStyle">W</div>
         <div v-if="cols.draw"         :style="statStyle">G</div>
         <div v-if="cols.lost"         :style="statStyle">V</div>
-        <div v-if="cols.goalsFor"     :style="goalStyle">+</div>
-        <div v-if="cols.goalsAgainst" :style="goalStyle">-</div>
+        <div v-if="cols.goalsFor"     class="scv-goal-for" :style="goalStyle">+</div>
+        <div v-if="cols.goalsAgainst" class="scv-goal-against" :style="goalStyle">-</div>
         <div v-if="cols.goalsDiff"    :style="goalStyle">+/-</div>
         <div v-if="cols.points"       :style="ptsStyle">Pts</div>
       </div>
@@ -37,8 +37,8 @@
           <div v-if="cols.won"          :style="rowStyle(statStyle, team)">{{ team.Won }}</div>
           <div v-if="cols.draw"         :style="rowStyle(statStyle, team)">{{ team.Draw }}</div>
           <div v-if="cols.lost"         :style="rowStyle(statStyle, team)">{{ team.Lost }}</div>
-          <div v-if="cols.goalsFor"     :style="rowStyle(goalStyle, team)">{{ team.GoalsFor }}</div>
-          <div v-if="cols.goalsAgainst" :style="rowStyle(goalStyle, team)">{{ team.GoalsAgainst }}</div>
+          <div v-if="cols.goalsFor"     class="scv-goal-for" :style="rowStyle(goalStyle, team)">{{ team.GoalsFor }}</div>
+          <div v-if="cols.goalsAgainst" class="scv-goal-against" :style="rowStyle(goalStyle, team)">{{ team.GoalsAgainst }}</div>
           <div v-if="cols.goalsDiff"    :style="rowStyle(goalStyle, team)">{{ fmtDiff(team.GoalsDifference) }}</div>
           <div v-if="cols.points"       :style="rowStyle(ptsStyle, team)">{{ team.TotalPoints }}</div>
         </div>

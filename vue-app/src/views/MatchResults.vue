@@ -3,11 +3,11 @@
     <div id="rcorners_matchinfo_fixed">
       <div class="matchEntry match-header">
         <div v-if="config.columnVisible?.left !== false" :style="{ background: config.leftBoxColor, color: config.leftBoxText, flex: config.columnWidths?.left ?? 2 }" id="datumUitslag_fixed">Datum</div>
-        <div v-if="config.showLogos !== false" :style="{ background: config.leftMidBoxColor }" class="clublogo-wrap"></div>
+        <div v-if="config.showLogos !== false" :style="{ background: config.leftMidBoxColor }" class="clublogo-wrap clublogo-wrap--home"></div>
         <div v-if="config.columnVisible?.leftMid !== false" :style="{ background: config.leftMidBoxColor, color: config.leftMidBoxText, flex: config.columnWidths?.leftMid ?? 9 }" id="thuisteam_fixed">Thuis</div>
         <div v-if="config.columnVisible?.mid !== false" :style="{ background: config.midBoxColor, color: config.midBoxText, flex: config.columnWidths?.mid ?? 4 }" id="kleedkamer_fixed">Uitslag</div>
         <div v-if="config.columnVisible?.rightMid !== false" :style="{ background: config.rightMidBoxColor, color: config.rightMidBoxText, flex: config.columnWidths?.rightMid ?? 9 }" id="uitteam_fixed">Gasten</div>
-        <div v-if="config.showLogos !== false" :style="{ background: config.rightMidBoxColor }" class="clublogo-wrap"></div>
+        <div v-if="config.showLogos !== false" :style="{ background: config.rightMidBoxColor }" class="clublogo-wrap clublogo-wrap--away"></div>
         <div v-if="config.columnVisible?.right !== false" :style="{ background: config.rightBoxColor, color: config.rightBoxText, flex: config.columnWidths?.right ?? 3 }" id="wedstrijdveld_fixed">Competitie</div>
       </div>
 
@@ -25,11 +25,11 @@
         <transition-group name="fade" tag="div">
           <div v-for="match in matches" :key="match.id" class="matchEntry">
             <div v-if="config.columnVisible?.left !== false" :style="{ background: config.leftBoxColor, color: config.leftBoxText, flex: config.columnWidths?.left ?? 2 }" id="datumUitslag_fixed">{{ match.datumopgemaakt }}</div>
-            <div v-if="config.showLogos !== false" :style="{ background: config.leftMidBoxColor }" class="clublogo-wrap"><img class="clublogo" :src="match.thuisteamlogo"></div>
+            <div v-if="config.showLogos !== false" :style="{ background: config.leftMidBoxColor }" class="clublogo-wrap clublogo-wrap--home"><img class="clublogo" :src="match.thuisteamlogo"></div>
             <div v-if="config.columnVisible?.leftMid !== false" :style="{ background: config.leftMidBoxColor, color: config.leftMidBoxText, flex: config.columnWidths?.leftMid ?? 9 }" id="thuisteam_fixed">{{ match.thuisteam }}</div>
             <div v-if="config.columnVisible?.mid !== false" :style="{ background: config.midBoxColor, color: config.midBoxText, flex: config.columnWidths?.mid ?? 4 }" id="kleedkamer_fixed">{{ match.uitslag }}</div>
             <div v-if="config.columnVisible?.rightMid !== false" :style="{ background: config.rightMidBoxColor, color: config.rightMidBoxText, flex: config.columnWidths?.rightMid ?? 9 }" id="uitteam_fixed">{{ match.uitteam }}</div>
-            <div v-if="config.showLogos !== false" :style="{ background: config.rightMidBoxColor }" class="clublogo-wrap"><img class="clublogo" :src="match.uitteamlogo"></div>
+            <div v-if="config.showLogos !== false" :style="{ background: config.rightMidBoxColor }" class="clublogo-wrap clublogo-wrap--away"><img class="clublogo" :src="match.uitteamlogo"></div>
             <div v-if="config.columnVisible?.right !== false" :style="{ background: config.rightBoxColor, color: config.rightBoxText, flex: config.columnWidths?.right ?? 3 }" id="wedstrijdveld_fixed">{{ match.competitiesoort }}</div>
           </div>
         </transition-group>
