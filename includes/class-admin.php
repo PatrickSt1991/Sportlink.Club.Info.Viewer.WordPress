@@ -179,6 +179,7 @@ class SCV_Admin {
             'general'  => __( 'Instellingen', 'sportlink-club-viewer' ),
             'style'    => __( 'Stijl', 'sportlink-club-viewer' ),
             'sponsors' => __( 'Sponsors', 'sportlink-club-viewer' ),
+            'support'  => __( 'Support', 'sportlink-club-viewer' ),
         ];
         $conn_status_opt = get_option( 'scv_connection_status', [] );
         $dot_status      = is_array( $conn_status_opt ) ? ( $conn_status_opt['status'] ?? 'unknown' ) : 'unknown';
@@ -204,6 +205,7 @@ class SCV_Admin {
                 switch ( $tab ) {
                     case 'style':    self::render_style_tab();    break;
                     case 'sponsors': self::render_sponsors_tab(); break;
+                    case 'support':  self::render_support_tab();  break;
                     default:         self::render_general_tab();  break;
                 }
                 ?>
@@ -1079,5 +1081,75 @@ class SCV_Admin {
             'rightBoxColor'      => $c['rightBoxColor'],
             'rightBoxText'       => $c['rightBoxText'],
         ];
+    }
+
+    private static function render_support_tab() {
+        $qr_url     = SCV_PLUGIN_URL . 'assets/img/ko-fi-qr.webp';
+        $kofi_url   = 'https://ko-fi.com/patrickst';
+        $github_url = 'https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer';
+        ?>
+        <div class="scv-support">
+            <h2><?php esc_html_e( 'Steun de ontwikkeling', 'sportlink-club-viewer' ); ?></h2>
+            <p class="scv-support-intro">
+                <?php esc_html_e( 'Deze plugin wordt in mijn vrije tijd ontwikkeld en onderhouden. Vind je hem nuttig? Trakteer me dan op een biertje via Ko-fi — zo blijft de motivatie hoog om door te bouwen.', 'sportlink-club-viewer' ); ?>
+            </p>
+
+            <div class="scv-support-grid">
+                <div class="scv-support-card">
+                    <h3><?php esc_html_e( 'Scan de QR-code', 'sportlink-club-viewer' ); ?></h3>
+                    <p><?php esc_html_e( 'Open de camera-app op je telefoon en richt op de QR-code om direct naar mijn Ko-fi-pagina te gaan.', 'sportlink-club-viewer' ); ?></p>
+                    <img src="<?php echo esc_url( $qr_url ); ?>"
+                         alt="<?php esc_attr_e( 'Ko-fi QR-code — scan om de ontwikkelaar te steunen', 'sportlink-club-viewer' ); ?>"
+                         class="scv-support-qr" />
+                </div>
+
+                <div class="scv-support-card">
+                    <h3><?php esc_html_e( 'Of klik direct', 'sportlink-club-viewer' ); ?></h3>
+                    <p><?php esc_html_e( 'Liever niet scannen? Klik op de knop hieronder om mijn Ko-fi-pagina te openen.', 'sportlink-club-viewer' ); ?></p>
+                    <div class="scv-support-button">
+                        <script type="text/javascript" src="https://storage.ko-fi.com/cdn/widget/Widget_2.js"></script>
+                        <script type="text/javascript">kofiwidget2.init('Buy me a beer', '#72a4f2', 'M4M71JOT9R');kofiwidget2.draw();</script>
+                        <noscript>
+                            <a href="<?php echo esc_url( $kofi_url ); ?>" target="_blank" rel="noopener noreferrer" class="button button-primary">
+                                <?php esc_html_e( 'Buy me a beer op Ko-fi', 'sportlink-club-viewer' ); ?>
+                            </a>
+                        </noscript>
+                    </div>
+                    <p class="scv-support-fallback">
+                        <?php
+                        printf(
+                            /* translators: %s: Ko-fi page URL */
+                            esc_html__( 'Werkt de knop niet? Ga naar %s.', 'sportlink-club-viewer' ),
+                            '<a href="' . esc_url( $kofi_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $kofi_url ) . '</a>'
+                        );
+                        ?>
+                    </p>
+                </div>
+            </div>
+
+            <hr />
+
+            <h3><?php esc_html_e( 'Bugs of wensen?', 'sportlink-club-viewer' ); ?></h3>
+            <p>
+                <?php
+                printf(
+                    /* translators: %s: GitHub repo URL */
+                    esc_html__( 'Loop je tegen een probleem aan of mis je een feature? Open een issue op GitHub: %s', 'sportlink-club-viewer' ),
+                    '<a href="' . esc_url( $github_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $github_url ) . '</a>'
+                );
+                ?>
+            </p>
+
+            <p class="scv-support-version">
+                <?php
+                printf(
+                    /* translators: %s: plugin version */
+                    esc_html__( 'Sportlink Club Viewer — versie %s', 'sportlink-club-viewer' ),
+                    esc_html( SCV_VERSION )
+                );
+                ?>
+            </p>
+        </div>
+        <?php
     }
 }

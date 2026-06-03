@@ -30,7 +30,7 @@ Een WordPress-plugin die het [ClubInfoBoard](https://github.com/PatrickSt1991/Sp
 
 ## Configuratie
 
-De instellingenpagina heeft drie tabbladen:
+De instellingenpagina heeft vier tabbladen:
 
 ### Instellingen (Algemeen)
 
@@ -80,6 +80,10 @@ Kies achtergrond- en tekstkleuren voor elk van de vijf weergavekolommen via de W
 
 Voeg sponsorafbeeldingen toe vanuit de WordPress-mediabibliotheek of via een directe URL. Maximaal 13 sponsors.
 
+### Support
+
+Bevat een Ko-fi QR-code en knop om de ontwikkelaar te steunen, een link naar GitHub voor bugs of feature-verzoeken, en het huidige plugin-versienummer.
+
 ## Shortcodes
 
 | Shortcode | Omschrijving |
@@ -102,6 +106,10 @@ npm run build
 ```
 
 De gecompileerde bestanden worden weggeschreven naar `assets/dist/` en samen met de PHP-bronbestanden opgeslagen, zodat een Node.js-omgeving niet vereist is voor een standaardinstallatie.
+
+## Steun de ontwikkeling
+
+Vind je deze plugin nuttig? Trakteer me dan op een biertje via [Ko-fi](https://ko-fi.com/patrickst) — dit project wordt in mijn vrije tijd onderhouden.
 
 ## Licentie
 
