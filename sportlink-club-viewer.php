@@ -1,30 +1,44 @@
 <?php
 /**
  * Plugin Name:       Sportlink Club Viewer
- * Plugin URI:        https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer
- * Description:       Toon wedstrijdprogramma, uitslagen en voorwedstrijdinformatie van Sportlink/Nevobo op je WordPress-site via shortcodes.
- * Version:           1.0.5
+ * Plugin URI:        https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress
+ * Description:       Toon wedstrijdprogramma, uitslagen, kleedkamerindeling en standen van Sportlink/Nevobo op je WordPress-site via shortcodes of een blok.
+ * Version:           1.1.0
+ * Requires at least: 5.9
+ * Requires PHP:      7.4
  * Author:            Patrick Stel
  * Author URI:        https://github.com/PatrickSt1991
  * License:           MIT
+ * License URI:       https://opensource.org/licenses/MIT
  * Text Domain:       sportlink-club-viewer
+ * Domain Path:       /languages
+ * Update URI:        https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SCV_VERSION',     '1.0.5' );
+define( 'SCV_VERSION',     '1.1.0' );
 define( 'SCV_PLUGIN_FILE', __FILE__ );
 define( 'SCV_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SCV_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
 
+require_once SCV_PLUGIN_DIR . 'includes/class-sportlink-client.php';
+require_once SCV_PLUGIN_DIR . 'includes/class-cache.php';
+require_once SCV_PLUGIN_DIR . 'includes/class-rest.php';
+require_once SCV_PLUGIN_DIR . 'includes/class-updater.php';
 require_once SCV_PLUGIN_DIR . 'includes/class-assets.php';
 require_once SCV_PLUGIN_DIR . 'includes/class-admin.php';
 require_once SCV_PLUGIN_DIR . 'includes/class-ajax.php';
 require_once SCV_PLUGIN_DIR . 'includes/class-shortcodes.php';
 
 add_action( 'plugins_loaded', function () {
+    load_plugin_textdomain( 'sportlink-club-viewer', false, dirname( plugin_basename( __FILE__ ) ) . '/languages' );
+
+    SCV_Cache::init();
+    SCV_REST::init();
+    SCV_Updater::init();
     SCV_Assets::init();
     SCV_Admin::init();
     SCV_Ajax::init();
@@ -50,6 +64,7 @@ add_action( 'init', function () {
 register_activation_hook( __FILE__, function () {
     // Set default options on first activation
     $defaults = [
+        'scv_cache_salt'           => (string) time(),
         'scv_programma_dagen'      => 7,
         'scv_uitslag_dagen'        => 7,
         'scv_prematch_refresh'     => 15,

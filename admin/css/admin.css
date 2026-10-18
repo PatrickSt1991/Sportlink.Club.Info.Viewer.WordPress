@@ -311,3 +311,6 @@
     color: #8c8f94;
     margin-top: 24px;
 }
+
+.scv-field-muted th,
+.scv-field-muted td { opacity: 0.55; }

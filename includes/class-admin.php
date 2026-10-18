@@ -321,6 +321,16 @@ class SCV_Admin {
                             <p class="description"><?php esc_html_e( 'Laat leeg om het huidige wachtwoord te behouden.', 'sportlink-club-viewer' ); ?></p>
                         </td>
                     </tr>
+                    <tr class="scv-field-sportlink-proxy scv-field-hide">
+                        <th scope="row"><?php esc_html_e( 'Gedeeld testaccount', 'sportlink-club-viewer' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="scv_fake_credentials" id="scv_fake_credentials" value="1" <?php checked( 1, $fake_credentials ); ?>>
+                                <?php esc_html_e( 'Gebruik het ingebouwde alleen-lezen account in plaats van eigen inloggegevens', 'sportlink-club-viewer' ); ?>
+                            </label>
+                            <p class="description"><?php esc_html_e( 'Handig om snel te testen. Voor dagelijks gebruik raden we een eigen Sportlink-app account aan.', 'sportlink-club-viewer' ); ?></p>
+                        </td>
+                    </tr>
 
                     <!-- Nevobo fields -->
                     <tr class="scv-field-nevobo scv-field-hide">
@@ -982,7 +992,7 @@ class SCV_Admin {
     /**
      * Build the scvConfig object passed to the Vue app via wp_localize_script.
      */
-    public static function build_vue_config( string $app_type ): array {
+    public static function build_vue_config( string $app_type, array $overrides = [] ): array {
         $colors   = (array) get_option( 'scv_colors', [] );
         $sponsors = (array) get_option( 'scv_sponsors', [] );
 
@@ -1011,7 +1021,7 @@ class SCV_Admin {
         ];
         $sc = array_merge( $sc_defaults, (array) get_option( 'scv_standing_columns', [] ) );
 
-        return [
+        $config = [
             'appType'            => $app_type,
             'gameTypeLabel'      => get_option( 'scv_game_type_label', '' ),
             'connectionType'     => get_option( 'scv_connection_type', '' ),
@@ -1019,9 +1029,9 @@ class SCV_Admin {
             'clubId'             => get_option( 'scv_club_id', '' ),
             'clubIdentifer'      => get_option( 'scv_club_identifier', '' ), // typo preserved for compat
             'sportLocatie'       => get_option( 'scv_sport_locatie', '' ),
-            'username'           => get_option( 'scv_username', '' ),
-            'password'           => get_option( 'scv_password', '' ),
-            'fakeCredentials'    => (bool) get_option( 'scv_fake_credentials', 0 ),
+            // Credentials never reach the browser: data is served by the plugin's own REST API.
+            'restUrl'            => esc_url_raw( rest_url( SCV_REST::NS . '/' ) ),
+            'version'            => SCV_VERSION,
             'programmaDagen'     => (int)  get_option( 'scv_programma_dagen', 7 ),
             'uitslagDagen'       => (int)  get_option( 'scv_uitslag_dagen', 7 ),
             'prematchRefresh'    => (int)  get_option( 'scv_prematch_refresh', 15 ),
@@ -1081,12 +1091,27 @@ class SCV_Admin {
             'rightBoxColor'      => $c['rightBoxColor'],
             'rightBoxText'       => $c['rightBoxText'],
         ];
+
+        // Shortcode attributes may override display settings per page.
+        foreach ( $overrides as $key => $value ) {
+            if ( array_key_exists( $key, $config ) ) {
+                $config[ $key ] = $value;
+            }
+        }
+
+        /**
+         * Filter the configuration handed to the front-end bundle.
+         *
+         * @param array  $config
+         * @param string $app_type match-display | prematch-display | standing-display | standings-overview
+         */
+        return apply_filters( 'scv_vue_config', $config, $app_type );
     }
 
     private static function render_support_tab() {
         $qr_url     = SCV_PLUGIN_URL . 'assets/img/ko-fi-qr.webp';
         $kofi_url   = 'https://ko-fi.com/patrickst';
-        $github_url = 'https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer';
+        $github_url = 'https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress';
         ?>
         <div class="scv-support">
             <h2><?php esc_html_e( 'Steun de ontwikkeling', 'sportlink-club-viewer' ); ?></h2>
@@ -1126,6 +1151,31 @@ class SCV_Admin {
                     </p>
                 </div>
             </div>
+
+            <hr />
+
+            <h3><?php esc_html_e( 'Cache en gegevens', 'sportlink-club-viewer' ); ?></h3>
+            <p>
+                <?php esc_html_e( 'Wedstrijdgegevens worden op de server gecachet (programma 5 min, uitslagen 10 min, standen 15 min, kleedkamers 30 sec) zodat Sportlink of Nevobo maar één keer per interval wordt bevraagd, hoeveel bezoekers je site ook heeft. Instellingen opslaan leegt de cache automatisch.', 'sportlink-club-viewer' ); ?>
+            </p>
+            <p>
+                <button type="button" id="scv-clear-cache" class="button button-secondary"><?php esc_html_e( 'Cache legen', 'sportlink-club-viewer' ); ?></button>
+                <label style="margin-left:10px;"><input type="checkbox" id="scv-clear-logos"> <?php esc_html_e( 'ook teamlogo\'s opnieuw ophalen', 'sportlink-club-viewer' ); ?></label>
+                <span id="scv-clear-cache-spinner" class="spinner" style="float:none;vertical-align:middle;margin:0 5px;display:none;"></span>
+                <span id="scv-clear-cache-status" class="description"></span>
+            </p>
+            <p class="description">
+                <?php
+                printf(
+                    /* translators: %s: REST status URL */
+                    esc_html__( 'De weergaven halen hun gegevens op via de REST API van deze site: %s. Als een beveiligingsplugin de REST API voor bezoekers blokkeert, moet de namespace scv/v1 worden toegestaan.', 'sportlink-club-viewer' ),
+                    '<a href="' . esc_url( rest_url( 'scv/v1/status' ) ) . '" target="_blank" rel="noopener noreferrer"><code>' . esc_html( rest_url( 'scv/v1/status' ) ) . '</code></a>'
+                );
+                ?>
+            </p>
+
+            <h3><?php esc_html_e( 'Updates', 'sportlink-club-viewer' ); ?></h3>
+            <p><?php esc_html_e( 'Nieuwe versies verschijnen automatisch op de Plugins-pagina van WordPress; ze worden rechtstreeks van de GitHub-releases gehaald.', 'sportlink-club-viewer' ); ?></p>
 
             <hr />
 

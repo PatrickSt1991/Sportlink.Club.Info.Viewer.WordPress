@@ -62,6 +62,13 @@
         }
     }
 
+    function updateFakeCredentials() {
+        const fake = $( '#scv_fake_credentials' ).is( ':checked' );
+        $( '#scv_username, #scv_password' ).prop( 'disabled', fake ).closest( 'tr' ).toggleClass( 'scv-field-muted', fake );
+    }
+    $( '#scv_fake_credentials' ).on( 'change', updateFakeCredentials );
+    updateFakeCredentials();
+
     $( '#scv_connection_type, #scv_game_type_label' ).on( 'change', updateFieldVisibility );
     $( '#scv_connection_type' ).on( 'change', updateStandingsVisibility );
     $( '#scv_club_id' ).on( 'change', updateStandingsVisibility );
@@ -785,6 +792,42 @@
 
         [ 'totalMatches', 'won', 'draw', 'lost', 'goalsFor', 'goalsAgainst', 'goalsDiff', 'points' ].forEach( function ( key ) {
             $( '[name="scv_standing_columns[' + key + ']"]' ).prop( 'checked', true );
+        } );
+    } );
+
+    // ── Clear server cache (support tab) ─────────────────────────────────────
+
+    $( '#scv-clear-cache' ).on( 'click', function () {
+        const $btn     = $( this );
+        const $spinner = $( '#scv-clear-cache-spinner' );
+        const $status  = $( '#scv-clear-cache-status' );
+
+        $btn.prop( 'disabled', true );
+        $spinner.show();
+        $status.text( '' ).removeClass( 'scv-error scv-success' );
+
+        $.ajax( {
+            url:    scvAdmin.ajaxUrl,
+            method: 'POST',
+            data:   {
+                action: 'scv_clear_cache',
+                nonce:  scvAdmin.nonce,
+                logos:  $( '#scv-clear-logos' ).is( ':checked' ) ? 1 : 0,
+            },
+        } )
+        .done( function ( response ) {
+            if ( response.success ) {
+                $status.text( '✓ ' + response.data.message ).addClass( 'scv-success' );
+            } else {
+                $status.text( response.data?.message || 'Cache legen mislukt.' ).addClass( 'scv-error' );
+            }
+        } )
+        .fail( function () {
+            $status.text( 'Verbindingsfout. Probeer opnieuw.' ).addClass( 'scv-error' );
+        } )
+        .always( function () {
+            $btn.prop( 'disabled', false );
+            $spinner.hide();
         } );
     } );
 

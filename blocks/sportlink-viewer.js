@@ -26,6 +26,7 @@
                 match:     'Wedstrijdprogramma / Uitslagen',
                 prematch:  'Voorwedstrijdinformatie',
                 standings: 'Team standen',
+                'standings-overview': 'Standen overzicht (meerdere elftallen)',
             };
 
             return [
@@ -38,6 +39,7 @@
                                 { label: 'Wedstrijdprogramma / Uitslagen', value: 'match'     },
                                 { label: 'Voorwedstrijdinformatie',         value: 'prematch'  },
                                 { label: 'Team standen',                   value: 'standings' },
+                                { label: 'Standen overzicht (meerdere elftallen)', value: 'standings-overview' },
                             ],
                             onChange: function ( val ) {
                                 setAttributes( { displayType: val } );
