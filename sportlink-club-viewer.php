@@ -3,7 +3,7 @@
  * Plugin Name:       Sportlink Club Viewer
  * Plugin URI:        https://github.com/PatrickSt1991/Sportlink.Club.Info.Viewer.WordPress
  * Description:       Toon wedstrijdprogramma, uitslagen, kleedkamerindeling en standen van Sportlink/Nevobo op je WordPress-site via shortcodes of een blok.
- * Version:           1.1.0
+ * Version:           1.1.1
  * Requires at least: 5.9
  * Requires PHP:      7.4
  * Author:            Patrick Stel
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'SCV_VERSION',     '1.1.0' );
+define( 'SCV_VERSION',     '1.1.1' );
 define( 'SCV_PLUGIN_FILE', __FILE__ );
 define( 'SCV_PLUGIN_DIR',  plugin_dir_path( __FILE__ ) );
 define( 'SCV_PLUGIN_URL',  plugin_dir_url( __FILE__ ) );
