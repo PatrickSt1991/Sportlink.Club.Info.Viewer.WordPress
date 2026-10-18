@@ -8,7 +8,7 @@
       <div v-else-if="error" id="noMatchMessage">
         <h1>{{ error }}</h1>
       </div>
-      <template v-else-if="teams.length">
+      <template v-else-if="rows.length">
 
         <!-- Fixed header -->
         <div class="matchEntry match-header">
@@ -25,9 +25,9 @@
         </div>
 
         <!-- Scrollable rows -->
-        <div ref="scrollEl" :style="{ height: containerHeight, overflowY: 'hidden' }">
+        <div ref="scrollEl" class="scrollingContainer" :style="{ height: containerHeight }">
           <div
-            v-for="team in teams"
+            v-for="team in rows"
             :key="team.PublicTeamId || team.Position"
             class="matchEntry"
           >
@@ -55,144 +55,60 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
-import { USER_CONFIG } from '@/config';
-import { useRouter } from 'vue-router';
-import { fetchStandings } from '@/utils/matchFetchHelpers/standingsFetcher';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import NoMatchesDisplay from '@/components/NoMatchesDisplay.vue';
+import { useAutoScroll } from '@/composables/useAutoScroll';
+import { useMatchData } from '@/composables/useMatchData';
+import { fetchStandings } from '@/utils/matchFetchHelpers';
 
-const router  = useRouter();
-const config  = ref({});
-const loading = ref(false);
-const error   = ref(null);
-const teams   = ref([]);
+const REFRESH_MS = 30 * 60 * 1000;
 const scrollEl = ref(null);
-const containerHeight = ref('400px');
 
-let scrollTimer  = null;
-let refreshTimer = null;
-
-// ── Column visibility ──────────────────────────────────────────────────────
-
-const cols = computed(() => config.value.standingColumns ?? {
-  totalMatches: true, won: true, draw: true, lost: true,
-  goalsFor: true, goalsAgainst: true, goalsDiff: true, points: true,
+const { config, rows, loading, error, reload } = useMatchData(fetchStandings, {
+  isConfigured: (cfg) => !!cfg.standingPoolId,
+  errorMessage: 'Fout bij laden van standen.',
 });
 
-// ── Column styles ──────────────────────────────────────────────────────────
+const cfg = computed(() => config.value);
+const cols = computed(() => cfg.value.standingColumns);
 
-const posStyle  = computed(() => ({
-  background: config.value.leftBoxColor     || '#b40808',
-  color:      config.value.leftBoxText      || '#ffffff',
-  flex: '0 0 52px', textAlign: 'center', padding: '14px 8px', fontWeight: '700',
-}));
-const nameStyle = computed(() => ({
-  background: config.value.leftMidBoxColor  || '#000000',
-  color:      config.value.leftMidBoxText   || '#ffffff',
-  flex: 1, padding: '14px 16px',
-}));
-const statStyle = computed(() => ({
-  background: config.value.midBoxColor      || '#de0b0b',
-  color:      config.value.midBoxText       || '#ffffff',
-  flex: '0 0 44px', textAlign: 'center', padding: '14px 6px',
-}));
-const goalStyle = computed(() => ({
-  background: config.value.rightMidBoxColor || '#000000',
-  color:      config.value.rightMidBoxText  || '#ffffff',
-  flex: '0 0 44px', textAlign: 'center', padding: '14px 6px',
-}));
-const ptsStyle  = computed(() => ({
-  background: config.value.rightBoxColor    || '#b40808',
-  color:      config.value.rightBoxText     || '#ffffff',
-  flex: '0 0 52px', textAlign: 'center', padding: '14px 8px', fontWeight: '700',
-}));
-
-// ── Helpers ────────────────────────────────────────────────────────────────
+const posStyle  = computed(() => ({ background: cfg.value.leftBoxColor,     color: cfg.value.leftBoxText,     flex: '0 0 52px', textAlign: 'center', padding: '14px 8px', fontWeight: '700' }));
+const nameStyle = computed(() => ({ background: cfg.value.leftMidBoxColor,  color: cfg.value.leftMidBoxText,  flex: 1, padding: '14px 16px' }));
+const statStyle = computed(() => ({ background: cfg.value.midBoxColor,      color: cfg.value.midBoxText,      flex: '0 0 44px', textAlign: 'center', padding: '14px 6px' }));
+const goalStyle = computed(() => ({ background: cfg.value.rightMidBoxColor, color: cfg.value.rightMidBoxText, flex: '0 0 44px', textAlign: 'center', padding: '14px 6px' }));
+const ptsStyle  = computed(() => ({ background: cfg.value.rightBoxColor,    color: cfg.value.rightBoxText,    flex: '0 0 52px', textAlign: 'center', padding: '14px 8px', fontWeight: '700' }));
 
 function isOwnTeam(team) {
   if (team.LocalTeam === true) return true;
-  const ids = String(config.value.standingTeamId || '').split(',').map(s => s.trim()).filter(Boolean);
+  const ids = String(cfg.value.standingTeamId || '').split(',').map((s) => s.trim()).filter(Boolean);
   return ids.includes(String(team.PublicTeamId));
 }
 
 function rowStyle(base, team) {
   if (!isOwnTeam(team)) return base;
-  return {
-    ...base,
-    background: config.value.ownTeamBg   || '#1a5c1a',
-    color:      config.value.ownTeamText || '#ffffff',
-    fontWeight: '700',
-  };
+  return { ...base, background: cfg.value.ownTeamBg, color: cfg.value.ownTeamText, fontWeight: '700' };
 }
 
-function fmtDiff(n) {
-  return n > 0 ? '+' + n : n;
+const fmtDiff = (n) => (n > 0 ? `+${n}` : n);
+
+const { containerHeight, recalcHeight, start } = useAutoScroll(scrollEl, {
+  stepPx: () => cfg.value.scrollSpeed || 2,
+  intervalMs: 50,
+  fixedHeight: () => cfg.value.displayHeight,
+});
+
+async function restart() {
+  await nextTick();
+  recalcHeight();
+  start();
 }
 
-// ── Height + scroll ────────────────────────────────────────────────────────
+watch(rows, restart);
 
-function calculateHeight() {
-  const el    = scrollEl.value;
-  if (!el) return;
-  const fixed = config.value?.displayHeight;
-  containerHeight.value = (fixed && fixed > 0)
-    ? `${fixed}px`
-    : `${window.innerHeight - el.getBoundingClientRect().top - 20}px`;
-}
-
-function startAutoScroll() {
-  if (scrollTimer) clearInterval(scrollTimer);
-  let pauseUntil = 0;
-  scrollTimer = setInterval(() => {
-    const el    = scrollEl.value;
-    if (!el || Date.now() < pauseUntil) return;
-    const speed = config.value?.scrollSpeed || 2;
-    el.scrollTop += speed;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
-      el.scrollTop = 0;
-      pauseUntil = Date.now() + 3000;
-    }
-  }, 50);
-}
-
-// ── Data load ──────────────────────────────────────────────────────────────
-
-async function loadStandings() {
-  loading.value = true;
-  error.value   = null;
-  try {
-    teams.value = await fetchStandings(config.value);
-    await nextTick();
-    calculateHeight();
-    if (teams.value.length) startAutoScroll();
-  } catch (err) {
-    error.value = err.message || 'Fout bij laden van standen.';
-    console.error('StandingsList:', err);
-  } finally {
-    loading.value = false;
-  }
-}
-
-watch(() => USER_CONFIG.value, (newConfig) => {
-  if (!newConfig) return;
-  config.value = { ...newConfig };
-
-  const hasIdentifier = newConfig.clientId || newConfig.clubIdentifer || newConfig.clubId;
-  if (!hasIdentifier || !newConfig.standingPoolId) {
-    router.push('/no-config');
-  } else {
-    loadStandings();
-  }
-}, { immediate: true, deep: true });
-
+let refreshTimer = null;
 onMounted(() => {
-  window.addEventListener('resize', calculateHeight);
-  refreshTimer = setInterval(loadStandings, 30 * 60 * 1000);
+  restart();
+  refreshTimer = setInterval(reload, REFRESH_MS);
 });
-
-onUnmounted(() => {
-  clearInterval(scrollTimer);
-  clearInterval(refreshTimer);
-  window.removeEventListener('resize', calculateHeight);
-});
+onUnmounted(() => clearInterval(refreshTimer));
 </script>

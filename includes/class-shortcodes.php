@@ -15,7 +15,8 @@ class SCV_Shortcodes {
      * Shows match schedule + results (auto-switches if setting is enabled).
      */
     public static function render_match_display( $atts ) {
-        return self::render( 'match-display' );
+        $a = shortcode_atts( [ 'days' => '', 'results_days' => '', 'height' => '', 'switch' => '', 'sponsors' => '' ], $atts, 'sportlink_match_display' );
+        return self::render( 'match-display', self::overrides( $a ) );
     }
 
     /**
@@ -23,7 +24,8 @@ class SCV_Shortcodes {
      * Shows pre-match room/field information.
      */
     public static function render_prematch_display( $atts ) {
-        return self::render( 'prematch-display' );
+        $a = shortcode_atts( [ 'height' => '', 'refresh' => '', 'sponsors' => '' ], $atts, 'sportlink_prematch_display' );
+        return self::render( 'prematch-display', self::overrides( $a ) );
     }
 
     /**
@@ -31,7 +33,8 @@ class SCV_Shortcodes {
      * Shows the league standings for the configured team.
      */
     public static function render_standing_display( $atts ) {
-        return self::render( 'standing-display' );
+        $a = shortcode_atts( [ 'team' => '', 'pool' => '', 'height' => '', 'sponsors' => '' ], $atts, 'sportlink_standing_display' );
+        return self::render( 'standing-display', self::overrides( $a ) );
     }
 
     /**
@@ -39,10 +42,42 @@ class SCV_Shortcodes {
      * Shows multiple league standings side-by-side, one per configured elftal.
      */
     public static function render_standings_overview( $atts ) {
-        return self::render( 'standings-overview' );
+        $a = shortcode_atts( [ 'columns' => '', 'full_width' => '', 'height' => '' ], $atts, 'sportlink_standings_overview' );
+        return self::render( 'standings-overview', self::overrides( $a ) );
     }
 
-    private static function render( string $app_type ): string {
+    /**
+     * Map shortcode attributes to config keys. Empty attributes keep the saved setting.
+     *
+     *   days="14" results_days="30" height="700" refresh="10" switch="no" sponsors="no"
+     *   team="123" pool="456" columns="3" full_width="no"
+     */
+    private static function overrides( array $atts ): array {
+        $bool = function ( $v ) {
+            return in_array( strtolower( (string) $v ), [ '1', 'yes', 'ja', 'true', 'on' ], true );
+        };
+        $map = [
+            'days'         => [ 'programmaDagen',     'absint' ],
+            'results_days' => [ 'uitslagDagen',       'absint' ],
+            'height'       => [ 'displayHeight',      'absint' ],
+            'refresh'      => [ 'prematchRefresh',    'absint' ],
+            'switch'       => [ 'enableScreenSwitch', $bool ],
+            'sponsors'     => [ 'activeSponsors',     $bool ],
+            'team'         => [ 'standingTeamId',     'sanitize_text_field' ],
+            'pool'         => [ 'standingPoolId',     'sanitize_text_field' ],
+            'columns'      => [ 'overviewColumns',    'sanitize_text_field' ],
+            'full_width'   => [ 'overviewFullWidth',  $bool ],
+        ];
+
+        $overrides = [];
+        foreach ( $map as $att => $def ) {
+            if ( ! isset( $atts[ $att ] ) || $atts[ $att ] === '' ) continue;
+            $overrides[ $def[0] ] = call_user_func( $def[1], $atts[ $att ] );
+        }
+        return $overrides;
+    }
+
+    private static function render( string $app_type, array $overrides = [] ): string {
         // Check if built assets exist
         $js_path  = SCV_PLUGIN_DIR . 'assets/dist/sportlink-viewer.js';
         $css_path = SCV_PLUGIN_DIR . 'assets/dist/sportlink-viewer.css';
@@ -59,7 +94,7 @@ class SCV_Shortcodes {
             wp_enqueue_style( 'scv-viewer' );
         }
 
-        $config    = SCV_Admin::build_vue_config( $app_type );
+        $config    = SCV_Admin::build_vue_config( $app_type, $overrides );
         $id        = 'scv-' . sanitize_key( $app_type );
         $config_id = 'scv-config-' . sanitize_key( $app_type );
 
