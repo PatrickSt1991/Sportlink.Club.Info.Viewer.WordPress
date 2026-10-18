@@ -13,6 +13,9 @@ Een WordPress-plugin die het [ClubInfoBoard](https://github.com/PatrickSt1991/Sp
 - Sponsorafbeeldingenbalk (maximaal 13 afbeeldingen, uit de mediabibliotheek of via URL)
 - Aangepaste achtergrondafbeelding via de WordPress-mediabibliotheek
 - Volledige configuratie via een native WordPress-beheerpagina
+- Gegevens worden door de server opgehaald en gecachet (`/wp-json/scv/v1/`): inloggegevens komen nooit in de browser en Sportlink wordt maar één keer per interval bevraagd
+- Shortcode-attributen om per pagina af te wijken van de instellingen
+- Updates verschijnen automatisch op de Plugins-pagina (vanaf GitHub-releases)
 - Geen externe afhankelijkheden buiten de plugin zelf
 
 ## Vereisten
@@ -95,6 +98,23 @@ Bevat een Ko-fi QR-code en knop om de ontwikkelaar te steunen, een link naar Git
 
 **Tip:** gebruik een paginasjabloon op volledige breedte of zonder kop- en voettekst voor een strak weergaveschermformaat.
 
+### Shortcode-attributen
+
+Alle attributen zijn optioneel; zonder attribuut geldt de opgeslagen instelling.
+
+| Shortcode | Attributen |
+|---|---|
+| `[sportlink_match_display]` | `days="14"` `results_days="30"` `height="700"` `switch="no"` `sponsors="no"` |
+| `[sportlink_prematch_display]` | `refresh="10"` `height="600"` `sponsors="no"` |
+| `[sportlink_standing_display]` | `team="123"` `pool="456"` `height="600"` |
+| `[sportlink_standings_overview]` | `columns="3"` `full_width="no"` `height="500"` |
+
+## Hoe de gegevens worden opgehaald
+
+De weergaven halen hun gegevens op bij de REST API van je eigen site (`/wp-json/scv/v1/program`, `/results`, `/prematch`, `/standings/{pool}`, `/logo/{bucket}/{hash}`). WordPress haalt de gegevens bij Sportlink of Nevobo op en cachet ze: programma 5 minuten, uitslagen 10 minuten, standen 15 minuten, kleedkamerindeling 30 seconden. Teamlogo's worden één keer opgehaald en in `wp-content/uploads/scv-logos/` bewaard.
+
+Instellingen opslaan leegt de cache automatisch; op het tabblad **Support** staat ook een knop **Cache legen**. Blokkeert een beveiligingsplugin de REST API voor bezoekers, sta dan de namespace `scv/v1` toe.
+
 ## Bouwen vanuit broncode
 
 De Vue 3-frontend bevindt zich in `vue-app/`. Bouw de bundel opnieuw na het maken van wijzigingen:
@@ -102,8 +122,11 @@ De Vue 3-frontend bevindt zich in `vue-app/`. Bouw de bundel opnieuw na het make
 ```bash
 cd vue-app
 npm install
+npm test
 npm run build
 ```
+
+De CI controleert dat `assets/dist/` overeenkomt met de broncode; commit de gebouwde bestanden dus mee.
 
 De gecompileerde bestanden worden weggeschreven naar `assets/dist/` en samen met de PHP-bronbestanden opgeslagen, zodat een Node.js-omgeving niet vereist is voor een standaardinstallatie.
 

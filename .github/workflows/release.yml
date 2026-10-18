@@ -27,7 +27,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: vue-app/package-lock.json
 
@@ -35,9 +35,26 @@ jobs:
         working-directory: vue-app
         run: npm ci
 
+      - name: Run front-end tests
+        working-directory: vue-app
+        run: npm test
+
       - name: Build Vue bundle
         working-directory: vue-app
         run: npm run build
+
+      - name: Lint PHP
+        run: find . -name '*.php' -not -path './vue-app/*' -print0 | xargs -0 -n1 php -l
+
+      - name: Check plugin version matches the tag
+        if: github.event_name == 'push'
+        run: |
+          HEADER=$(grep -oP "^ \* Version:\s+\K[0-9.]+" sportlink-club-viewer.php)
+          CONST=$(grep -oP "define\( 'SCV_VERSION',\s+'\K[0-9.]+" sportlink-club-viewer.php)
+          STABLE=$(grep -oP "^Stable tag:\s+\K[0-9.]+" readme.txt)
+          TAG="${GITHUB_REF_NAME#v}"
+          echo "header=$HEADER const=$CONST stable=$STABLE tag=$TAG"
+          [ "$HEADER" = "$TAG" ] && [ "$CONST" = "$TAG" ] && [ "$STABLE" = "$TAG" ] || { echo "::error::Version mismatch"; exit 1; }
 
       # ── Determine version ──────────────────────────────────────────────────
       - name: Set version
@@ -60,11 +77,15 @@ jobs:
           mkdir -p /tmp/plugin/${PLUGIN_SLUG}
 
           cp sportlink-club-viewer.php /tmp/plugin/${PLUGIN_SLUG}/
+          cp uninstall.php              /tmp/plugin/${PLUGIN_SLUG}/
+          cp readme.txt                 /tmp/plugin/${PLUGIN_SLUG}/
           cp README.md                  /tmp/plugin/${PLUGIN_SLUG}/
 
           cp -r includes  /tmp/plugin/${PLUGIN_SLUG}/
           cp -r admin     /tmp/plugin/${PLUGIN_SLUG}/
           cp -r assets    /tmp/plugin/${PLUGIN_SLUG}/
+          cp -r blocks    /tmp/plugin/${PLUGIN_SLUG}/
+          cp -r languages /tmp/plugin/${PLUGIN_SLUG}/
 
           cd /tmp/plugin
           zip -r "${GITHUB_WORKSPACE}/${ZIP_NAME}" ${PLUGIN_SLUG}/
