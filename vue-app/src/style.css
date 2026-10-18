@@ -78,12 +78,7 @@
   box-shadow: 0 3px 18px rgba(0, 0, 0, 0.55);
 }
 
-#datumUitslag_fixed,
-#datumProgramma_fixed,
-#thuisteam_fixed,
-#kleedkamer_fixed,
-#uitteam_fixed,
-#wedstrijdveld_fixed {
+.matchCol {
   font-size: inherit;
   font-weight: inherit;
   display: flex;
@@ -93,28 +88,13 @@
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.20);
 }
 
-#datumUitslag_fixed {
-  flex: 2;
-  padding: 18px 10px;
-  letter-spacing: 0.03em;
-}
+.col-date { flex: 2; padding: 18px 10px; letter-spacing: 0.03em; }
+.col-team { flex: 9; padding: 18px 16px; }
+.col-mid  { flex: 4; padding: 18px 10px; }
+.col-comp { flex: 3; padding: 18px 10px; letter-spacing: 0.04em; }
 
-#datumProgramma_fixed {
-  flex: 2;
-  padding: 10px 10px;
-  letter-spacing: 0.03em;
-}
-
-#thuisteam_fixed  { flex: 9; padding: 18px 16px; }
-#uitteam_fixed    { flex: 9; padding: 18px 16px; }
-#kleedkamer_fixed { flex: 4; padding: 18px 10px; }
-
-#wedstrijdveld_fixed {
-  flex: 3;
-  padding: 18px 10px;
-  letter-spacing: 0.04em;
-  box-shadow: none;
-}
+/* Last column — remove the right separator */
+.matchEntry > .matchCol:last-child { box-shadow: none; }
 
 /* ─── Club logo ───────────────────────────────────────────── */
 .clublogo-wrap {
@@ -135,7 +115,7 @@
 }
 
 /* ─── Scrolling container ─────────────────────────────────── */
-#scrollingContainer {
+.scrollingContainer {
   overflow-y: hidden;
   position: relative;
 }
@@ -302,8 +282,7 @@
   }
 
   /* Date row: full-width header */
-  #scv-match-display .matchEntry > #datumProgramma_fixed,
-  #scv-match-display .matchEntry > #datumUitslag_fixed {
+  #scv-match-display .matchEntry > .col-date {
     grid-area: date;
     flex: unset !important;
     padding: 10px 14px !important;
@@ -326,19 +305,19 @@
   }
 
   /* Team name cells: left-aligned next to their logo */
-  #scv-match-display .matchEntry > #thuisteam_fixed,
-  #scv-match-display .matchEntry > #uitteam_fixed {
+  #scv-match-display .matchEntry > .col-home,
+  #scv-match-display .matchEntry > .col-away {
     flex: unset !important;
     padding: 10px 12px !important;
     justify-content: flex-start;
     text-align: left;
     font-size: 1.05em;
   }
-  #scv-match-display .matchEntry > #thuisteam_fixed { grid-area: homeName; }
-  #scv-match-display .matchEntry > #uitteam_fixed   { grid-area: awayName; }
+  #scv-match-display .matchEntry > .col-home { grid-area: homeName; }
+  #scv-match-display .matchEntry > .col-away   { grid-area: awayName; }
 
   /* Middle row (Aanvang / Uitslag) — slim separator between teams */
-  #scv-match-display .matchEntry > #kleedkamer_fixed {
+  #scv-match-display .matchEntry > .col-mid {
     grid-area: mid;
     flex: unset !important;
     padding: 4px 12px !important;
@@ -349,7 +328,7 @@
   }
 
   /* Competition row: footer */
-  #scv-match-display .matchEntry > #wedstrijdveld_fixed {
+  #scv-match-display .matchEntry > .col-comp {
     grid-area: comp;
     flex: unset !important;
     padding: 6px 12px !important;
@@ -388,7 +367,7 @@
   }
 
   /* Aanvang (date) and Veld span the full card width */
-  #scv-prematch-display .matchEntry > #datumUitslag_fixed {
+  #scv-prematch-display .matchEntry > .col-date {
     grid-area: date;
     flex: unset !important;
     padding: 10px 14px !important;
@@ -397,7 +376,7 @@
     box-shadow: none !important;
   }
 
-  #scv-prematch-display .matchEntry > #wedstrijdveld_fixed {
+  #scv-prematch-display .matchEntry > .col-veld {
     grid-area: veld;
     flex: unset !important;
     padding: 6px 12px !important;
@@ -408,20 +387,20 @@
   }
 
   /* Team names: left side */
-  #scv-prematch-display .matchEntry > #thuisteam_fixed,
-  #scv-prematch-display .matchEntry > #uitteam_fixed {
+  #scv-prematch-display .matchEntry > .col-home,
+  #scv-prematch-display .matchEntry > .col-away {
     flex: unset !important;
     padding: 10px 12px !important;
     justify-content: flex-start;
     text-align: left;
     font-size: 1.05em;
   }
-  #scv-prematch-display .matchEntry > #thuisteam_fixed { grid-area: homeNm; }
-  #scv-prematch-display .matchEntry > #uitteam_fixed   { grid-area: awayNm; }
+  #scv-prematch-display .matchEntry > .col-home { grid-area: homeNm; }
+  #scv-prematch-display .matchEntry > .col-away   { grid-area: awayNm; }
 
   /* Kleedkamer values: right side, fixed-min width chip */
-  #scv-prematch-display .matchEntry > .kleedkamer--home,
-  #scv-prematch-display .matchEntry > .kleedkamer--away {
+  #scv-prematch-display .matchEntry > .col-mid,
+  #scv-prematch-display .matchEntry > .col-right {
     flex: unset !important;
     padding: 10px 14px !important;
     font-size: 0.95em;
@@ -429,8 +408,8 @@
     text-align: center;
     box-shadow: none !important;
   }
-  #scv-prematch-display .matchEntry > .kleedkamer--home { grid-area: homeKk; }
-  #scv-prematch-display .matchEntry > .kleedkamer--away { grid-area: awayKk; }
+  #scv-prematch-display .matchEntry > .col-mid { grid-area: homeKk; }
+  #scv-prematch-display .matchEntry > .col-right { grid-area: awayKk; }
 
   /* ── Standings: keep tabular, shrink, allow horizontal swipe ──────────── */
   #scv-standing-display #topbar,
