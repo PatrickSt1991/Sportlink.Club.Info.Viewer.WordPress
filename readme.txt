@@ -4,7 +4,7 @@ Tags: sportlink, nevobo, voetbal, wedstrijdprogramma, uitslagen, standen, sportv
 Requires at least: 5.9
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -60,6 +60,9 @@ Het programma wordt 5 minuten gecachet, uitslagen 10 minuten, standen 15 minuten
 In `wp-content/uploads/scv-logos/`. Ze worden één keer opgehaald en daarna van je eigen site geserveerd.
 
 == Changelog ==
+
+= 1.1.1 =
+* Vue bijgewerkt naar 3.5.44 (advisory GHSA-g2v6-rqmx-r4w6 in @vue/server-renderer; de plugin gebruikt geen server-side rendering, maar de afhankelijkheid is nu schoon).
 
 = 1.1.0 =
 * Gegevens worden nu op de server opgehaald en gecachet via `wp-json/scv/v1`; inloggegevens en API-sleutels staan niet meer in de pagina.
